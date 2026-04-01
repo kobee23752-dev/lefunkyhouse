@@ -639,48 +639,49 @@ app.post('/api/ticket-orders', async (req, res) => {
   orders.push(order);
   writeJSON('ticket-orders.json', orders);
 
-  // Send email notification to owner with confirm button
-  try {
-    const transporter = createTransporter();
-    if (transporter) {
-      const smtp = getEmailSettings();
-      const confirmToken = genConfirmToken(order.id);
-      const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
-      const artistText = ticket.artist ? `${ticket.artist} - ` : '';
-      await transporter.sendMail({
-        from: `"樂放購票系統" <${smtp.user}>`,
-        to: OWNER_EMAIL,
-        subject: `【新購票通知】${order.name} - ${artistText}${ticket.title} (${order.quantity}張)`,
-        html: `
-          <div style="font-family:sans-serif;max-width:500px;padding:20px">
-            <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新購票通知</h2>
-            <table style="font-size:14px;line-height:2">
-              <tr><td style="color:#888;padding-right:16px">演出場次</td><td><strong>${artistText}${ticket.title}</strong></td></tr>
-              <tr><td style="color:#888">演出日期</td><td>${ticket.date} ${ticket.time}</td></tr>
-              <tr><td style="color:#888">姓名</td><td>${order.name}</td></tr>
-              <tr><td style="color:#888">電話</td><td>${order.phone}</td></tr>
-              <tr><td style="color:#888">Email</td><td>${order.email}</td></tr>
-              <tr><td style="color:#888">票數</td><td>${order.quantity} 張</td></tr>
-              <tr><td style="color:#888">帳號末五碼</td><td>${order.bankLast5}</td></tr>
-              <tr><td style="color:#888">已匯款</td><td>${order.hasPaid ? '是' : '否'}</td></tr>
-            </table>
-            <div style="margin-top:24px;text-align:center">
-              <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
-            </div>
-            <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
-            <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
-          </div>
-        `
-      });
-      console.log('已寄送購票通知信給老闆娘');
-    } else {
-      console.log('SMTP 未設定，跳過寄信。購票資料:', order.name, ticket.title);
-    }
-  } catch (e) {
-    console.error('寄送購票通知信失敗:', e.message);
-  }
-
+  // 先回應客人，不要讓客人等寄信
   res.json(order);
+
+  // 背景寄信通知老闆娘
+  (async () => {
+    try {
+      const transporter = createTransporter();
+      if (transporter) {
+        const smtp = getEmailSettings();
+        const confirmToken = genConfirmToken(order.id);
+        const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
+        const artistText = ticket.artist ? `${ticket.artist} - ` : '';
+        await transporter.sendMail({
+          from: `"樂放購票系統" <${smtp.user}>`,
+          to: OWNER_EMAIL,
+          subject: `【新購票通知】${order.name} - ${artistText}${ticket.title} (${order.quantity}張)`,
+          html: `
+            <div style="font-family:sans-serif;max-width:500px;padding:20px">
+              <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新購票通知</h2>
+              <table style="font-size:14px;line-height:2">
+                <tr><td style="color:#888;padding-right:16px">演出場次</td><td><strong>${artistText}${ticket.title}</strong></td></tr>
+                <tr><td style="color:#888">演出日期</td><td>${ticket.date} ${ticket.time}</td></tr>
+                <tr><td style="color:#888">姓名</td><td>${order.name}</td></tr>
+                <tr><td style="color:#888">電話</td><td>${order.phone}</td></tr>
+                <tr><td style="color:#888">Email</td><td>${order.email}</td></tr>
+                <tr><td style="color:#888">票數</td><td>${order.quantity} 張</td></tr>
+                <tr><td style="color:#888">帳號末五碼</td><td>${order.bankLast5}</td></tr>
+                <tr><td style="color:#888">已匯款</td><td>${order.hasPaid ? '是' : '否'}</td></tr>
+              </table>
+              <div style="margin-top:24px;text-align:center">
+                <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
+              </div>
+              <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
+              <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+            </div>
+          `
+        });
+        console.log('已寄送購票通知信給老闆娘');
+      }
+    } catch (e) {
+      console.error('寄送購票通知信失敗:', e.message);
+    }
+  })();
 });
 
 // Admin: get all orders
