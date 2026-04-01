@@ -1,0 +1,616 @@
+[
+  {
+    "id": "mnfjkb1y8fd062",
+    "name": "王振鴻",
+    "genre": "",
+    "bio": "2012年 北韻獎歌唱大賽 冠軍 \r\n2013年 台大音韻獎歌唱比賽 冠軍 \r\n2014年 我要當歌手 冠軍 \r\n2015年 中國夢想秀高票奪標贏得夢想 \r\n\r\n受邀中國內地巡迴表演一年 \r\n歌唱選秀節目合作：翁立友／李聖傑／朱俐靜 \r\n《綜藝大熱門》中秋限定感人企劃 演唱嘉賓 \r\nMonster Music Pub 駐唱歌手 \r\n草山夜未眠音樂餐廳 駐唱歌手 \r\n水灣企業股份有限公司 駐唱歌手 \r\n淡水紅樓 駐唱歌手",
+    "photo": "/uploads/artists/mnfjkb1maca2a2.png",
+    "photoFit": "cover",
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 1
+  },
+  {
+    "id": "mnfzsf4gf5ba5c",
+    "name": "馬馬",
+    "genre": "",
+    "bio": "2015-2016 餐廳駐唱/ 歌手、鍵盤手\r\n2018 大專院校學畢業展/ 開場主持人\r\n2021 北藝大音樂平安祭/ 歌手、鍵盤手\r\n2022 馬崗音樂節演出/ 歌手、鍵盤手\r\n2023 婚禮歌手、樂團表演\r\n2023 大型企業尾牙開場歌手",
+    "photo": "/uploads/artists/mnfzsf4e780868.png",
+    "photoFit": "contain",
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 2,
+    "photoPosY": 3
+  },
+  {
+    "id": "mng0nql35af239",
+    "name": "林慧哲",
+    "genre": "",
+    "bio": "1978年第二屆金韻獎創作組獎\r\n詞曲創作〈謎、曲〉〈勿忘塵〉〈邂逅〉、〈夜闌〉\r\n1984年受亞洲唱片擔任《1984新人獎》全碟編曲\r\n2009年第三屆海峽兩岸閩南語原創歌曲／歌手創作大賽冠軍。️2013年第六屆亞軍與最佳演唱獎。\r\n被業界譽為台灣吉他教父、指彈吉他先驅。出版《快樂民歌手》、《民謠吉他大經典》、《摩登民謠吉他演奏曲集》等著作",
+    "photo": "/uploads/artists/mng0nql0c20207.png",
+    "photoFit": "cover",
+    "photoPosY": 15,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 3
+  },
+  {
+    "id": "mng127w8c49b13",
+    "name": "黃君君",
+    "genre": "",
+    "bio": "女士優先音樂\r\n香山市集街頭彈唱\r\n向日文創musicbar駐唱\r\nTiktok 彈唱主播",
+    "photo": "/uploads/artists/mng127w51f0f6c.png",
+    "photoFit": "cover",
+    "photoPosY": 14,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 5
+  },
+  {
+    "id": "mng12wes09e3a4",
+    "name": "磊磊Ray",
+    "genre": "",
+    "bio": "台灣大哥大春酒歌手\r\n泰山高中流行音樂社團導師\r\n三民高中唱歌比賽評審",
+    "photo": "/uploads/artists/mng12weq7a1de5.png",
+    "photoFit": "cover",
+    "photoPosY": 17,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 6
+  },
+  {
+    "id": "mng0v8hg010193",
+    "name": "夢竹",
+    "genre": "",
+    "bio": "2015年 新加坡愛琴海民歌餐廳固定駐唱歌手\r\n2017年 INGRESS TAIPEI EXO5 開場歌手\r\n2017年 三井Outlet林口固定駐唱歌手\r\n2018年 三井Outlet林口固定駐唱歌手\r\n2019年 Basilica爵士婚禮樂團歌手\r\n2021年 海上皇宮駐唱\r\n2022年 新光三越復興館活動歌手\r\n2023年 泰國กาดบะป๊าว เชียงใหม่椰林市集 受邀表演歌手",
+    "photo": "/uploads/artists/mng0v8h1b5a300.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 7
+  },
+  {
+    "id": "mng18qbi952855",
+    "name": "七月微風樂團",
+    "genre": "",
+    "bio": "表演經歷：\r\n桃園外婆橋餐廳駐唱\r\n新竹社區茼蒿演唱會\r\n雲享社區區權會晚會\r\n中和威力廣場車展演新北市立陶瓷博物館\r\n比賽：\r\n小容：校際歌唱比賽第一名\r\nJennifer：校際吉他彈唱比賽第二名",
+    "photo": "/uploads/artists/mng18qbg9fc627.png",
+    "photoFit": "cover",
+    "photoPosY": 68,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 8
+  },
+  {
+    "id": "mng15vxdafb4aa",
+    "name": "麋酒頭 Mi Chu Spirits",
+    "genre": "",
+    "bio": "麋米（劉軒能）跟羅竺的美聲合作，從法藍瓷音樂餐廳開始、在雅痞書店找出女聲二重唱適合的音樂，從富有情感百老匯音樂劇開始，陸續踏入了民歌以及國台語經典名曲的範疇，演出足跡包括宜蘭鳳梨屋水上營地、中壢大河壩小書店、太平洋建設尾牙．．．等。",
+    "photo": "/uploads/artists/mng15vxa213e0c.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 9
+  },
+  {
+    "id": "mng0p3wr44b8ff",
+    "name": "藍大叔",
+    "genre": "",
+    "bio": "抓爬樂樂團吉他手\r\n一個小團體吉他手\r\n原夢樂團吉他手\r\n斜槓的工人吉他手\r\n擅長拉丁藍調\r\n喜歡唱英文歌與抒情歌曲的大叔",
+    "photo": "/uploads/artists/mng0p3wne06f56.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 10
+  },
+  {
+    "id": "mng0u008923a3a",
+    "name": "Max",
+    "genre": "",
+    "bio": "Rick Dill and Friends\r\nPhoebe Ryan \r\nWhodat\r\nBlackwood Vibe \r\nIf the Shoe Fits\r\nRoger and the Yeti \r\n來自紐澤西的吉他詩人\r\n目前是台東一所國中的英文老師\r\n鄉村藍調一把抓的高手",
+    "photo": "/uploads/artists/mng0u005781e53.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 11
+  },
+  {
+    "id": "mng13qqi6c2f75",
+    "name": "正飛揚FLYING",
+    "genre": "",
+    "bio": "2025桃園中原文創中秋夯肉派對演唱團體\r\n2026桃園年貨大街中壢銀河廣場演唱團體\r\n桃園龍潭嗜酒串燒屋駐唱",
+    "photo": "/uploads/artists/mng13qqgfa92bf.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 12
+  },
+  {
+    "id": "mng184l145e8fc",
+    "name": "藍翼樂團",
+    "genre": "",
+    "bio": "白沙灣伊莎貝拉海灘餐廳\r\n美國新心音樂台北音樂會演出\r\n師大西瓜音樂節\r\n大板根度假飯店夏季音樂祭\r\n桃園Bistro121酒吧",
+    "photo": "/uploads/artists/mng184ky81053d.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 13
+  },
+  {
+    "id": "mng193zp54be13",
+    "name": "FLY BAND 飛翔搖滾樂團",
+    "genre": "",
+    "bio": "團長兼主唱：陳正翔Michael\r\n鍵盤手：邱瑄誼Annie\r\n鼓手：張家源Ray\r\n薩克斯風：陳冠元 Victor\r\n電吉他手1：曹世寧Stan\r\n電吉他手2：鄧振榮Raven\r\n貝斯手：楊明輯Joe",
+    "photo": "/uploads/artists/mng193zl8dbcbc.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 14
+  },
+  {
+    "id": "mng149zl512c9f",
+    "name": "MIDNIGHT CODE",
+    "genre": "",
+    "bio": "Midnight Code 成員來自不同背景，在城市的節奏與脈動之中，以熱情為語法、默契為結構，將聲音編寫成流動於夜色之中的語言。",
+    "photo": "/uploads/artists/mng149zh36b752.png",
+    "photoFit": "cover",
+    "photoPosY": 15,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 15
+  },
+  {
+    "id": "mng0vswq018a40",
+    "name": "李凱翔",
+    "genre": "",
+    "bio": "2016年 張雨生紀念音樂會（台北）\r\n2017年 張雨生紀念音樂會（高雄）\r\n2018年 福建省福州市電視台演出彈唱\r\n2018年 河南省信陽市廣播電台演出\r\n2022年 桃園少年之家公益演出吉他手\r\n2022年 銘傳大學校內歌唱比賽評審\r\n2023年 台大醫院公益演出吉他手\r\n2024年 山東省德州市兩岸美食活動吉他手\r\n2024年 山東省德州市兩岸書畫交流賽吉他手",
+    "photo": "/uploads/artists/mng0vswo2d22ff.png",
+    "photoFit": "cover",
+    "photoPosY": 9,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 16
+  },
+  {
+    "id": "mng0uilm2f8180",
+    "name": "林信宏",
+    "genre": "",
+    "bio": "2020年 第13屆大同大學銅扣獎 創作組冠軍\r\n2020年 第29屆文化大学華韻獎 創作組亞軍\r\n2020年 第42屆輔仁大學青獎 創作組季軍\r\n2021年 第10屆伊林璀璨之星 演藝組十強\r\n2023年 響樂北門町 金薪獎響歌唱競賽 佳作\r\n2023年 原音迴 札哈木之星歌唱大賽第四名\r\n2023年 原住民族文化節之林班歌大賽10強\r\n2023年 桃園街頭藝術嘉年華10強",
+    "photo": "/uploads/artists/mng0uill63c8ca.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 17
+  },
+  {
+    "id": "mng0tb1a177f9d",
+    "name": "拉拉 Viola",
+    "genre": "",
+    "bio": "曾於外百老匯音樂劇擔任音樂總監\r\n參與許多紐約在地劇院音樂劇製作\r\n金革國際唱片擔任年度導演以及編劇\r\n天工開物多媒體互動公司音樂製作人\r\niPlay愛玩親子藝術展演經理\r\n第42街音樂劇團藝術總監",
+    "photo": "/uploads/artists/mng0tb17111a07.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 18
+  },
+  {
+    "id": "mng15f3pbfadc9",
+    "name": "Duo暢",
+    "genre": "",
+    "bio": "兩個（經）常暢（快）唱（歌）的朋友組成的樂團（vocal、電吉他、鍵盤、爵士鼓），團員皆可主唱，不同聲線希望帶給來賓美好的音樂時光\r\n\r\n參與演出：\r\n花火節樂團演出\r\n大口吃萬華音樂演出\r\n中華愛作伙樂齡關懷協會音樂會\r\npub、餐廳演出\r\n企業活動、尾牙演出",
+    "photo": "/uploads/artists/mng15f3ncff66c.png",
+    "photoFit": "cover",
+    "photoPosY": 26,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 19
+  },
+  {
+    "id": "mng096px3caaa6",
+    "name": "陳正修Basilio",
+    "genre": "",
+    "bio": "陳正修是台灣知名拉丁美洲專家，早期擔任公職專攻中南美事務，經常帶領貿易訪問團前往中南美洲，因此愛上拉丁音樂，並學習國內少有的拉丁吉他彈唱。退休後經常與國內外知名樂團一起演出，每次表演時都會有許多吉他手前往觀摩，由於鮮少公開演出，因此每場表演都高朋滿座！",
+    "photo": "/uploads/artists/mng096pufa8397.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 20
+  },
+  {
+    "id": "mng04ox83a8301",
+    "name": "Jelly",
+    "genre": "",
+    "bio": "國立台北藝術大學音樂學系聲樂主修\r\n伊林經紀公司所舉辦璀璨之星季軍\r\n第一屆台中國家歌劇院音樂劇",
+    "photo": "/uploads/artists/mng04ox587377e.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 21
+  },
+  {
+    "id": "mng0kv8y1f5680",
+    "name": "李科慰",
+    "genre": "",
+    "bio": "屏東咖啡園區個人表演\r\n泰武鄉3092聖誕點燈表演團體\r\n斜坡藝術野台表演團體\r\n札哈木公園音樂祭 表演團體\r\n屏東原百貨 個人表演演唱\r\nMon jou 野奢露營莊園 駐唱\r\n法法樣 工作坊 駐唱\r\n風刮地秋月的店 駐唱\r\n渴樂音樂美食BAR 駐唱\r\n風刮地秋月的店 駐唱",
+    "photo": "/uploads/artists/mng0kv8s87713b.png",
+    "photoFit": "cover",
+    "photoPosY": 4,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 22
+  },
+  {
+    "id": "mng0c4q5f5d337",
+    "name": "Ricky",
+    "genre": "",
+    "bio": "港台各大飯店表演\r\n世界各地知名藝人搭擋演出\r\n婚宴及各種活動的資深歌手\r\n精通各種曲式，如拉丁、爵士彈唱",
+    "photo": "/uploads/artists/mng0c4q1b19450.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 23
+  },
+  {
+    "id": "mng0ssn858fb22",
+    "name": "張念晨",
+    "genre": "",
+    "bio": "2022文昌設計生活節表演\r\nVincent Memory音樂節表演\r\n中國科大吉他社成果展表演\r\n滷味之王傳統市場節表演\r\n城市科大藝文週表演\r\n城市科大聖誕節活動表演",
+    "photo": "/uploads/artists/mng0ssmqb01034.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 24
+  },
+  {
+    "id": "mng03hoc272396",
+    "name": "小潘",
+    "genre": "",
+    "bio": "花東縱谷池上鄉原住民歌手\r\n池上樂台穀聲吶響創始人\r\n池上大波池環境教育會館吉他音樂會常駐歌手\r\n池上鄉日暉大飯店駐唱歌手\r\n台東鐵花村常駐街頭藝人\r\n樂賞基金會合作歌手\r\nTikTok直播主「池上歌手小潘」",
+    "photo": "/uploads/artists/mng03ho9643a47.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 25
+  },
+  {
+    "id": "mnfzpcz1651409",
+    "name": "小孩",
+    "genre": "",
+    "bio": "淡水樂放餐廳駐唱\r\nPSI吉他公司合作cover藝人\r\n電視劇《競技青春》拍攝\r\n電視劇《如果花知道》拍攝\r\n數媒系畢業製作MV女主角\r\n班展歌舞劇《愛舞赦》女主角\r\n學制改編新不了情歌舞劇《天亮前出發》女主角\r\n大學畢製原創舞蹈劇《敗部復活》演員\r\n2025上海商銀家庭日歌唱表演\r\n淡水滬尾新星召集令比賽\r\n有夢音樂演唱會徵選通過\r\n受邀參與孫盛希殘酷二選一比賽\r\n聲林之王2-現場海選通過\r\n城市科大校慶表演\r\n城市科大歌唱比賽第三名\r\n城市科大餐飲系畢業典禮表演\r\n城市科大藝文週表演\r\n城市科大金米獎藝人",
+    "photo": "/uploads/artists/mnfzpcyw68ff90.png",
+    "photoFit": "cover",
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 26,
+    "photoPosY": 50
+  },
+  {
+    "id": "mng02nbl46df0d",
+    "name": "浴巾陪你",
+    "genre": "",
+    "bio": "音樂教室/企業/學校烏克麗麗老師\r\n北北基/桃園 街頭藝人\r\n紅色穀倉美式餐廳 表演歌手\r\nBristo 21 餐廳 表演歌手\r\n女士優先音樂會 表演歌手\r\n大稻埕好世界藝術家聯展 表演歌手",
+    "photo": "/uploads/artists/mng02nbg28aee6.png",
+    "photoFit": "cover",
+    "photoPosY": 33,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 27
+  },
+  {
+    "id": "mnfzr0h9930316",
+    "name": "黃藍白",
+    "genre": "",
+    "bio": "超級星光大道\r\n海洋音樂祭\r\n宜蘭童玩節烏克麗麗演出\r\n專輯：醒來、遙遠的少年、莫名奇妙冒險、12月\r\n黃藍白音樂工坊（詞曲創作、錄音）\r\n教授新興國小烏克麗麗社\r\n教授育英國小烏克麗麗班\r\n教授文化國小烏克麗麗班\r\n教授正德國中才藝養成班\r\n教授淡水國中吉他社",
+    "photo": "/uploads/artists/mnfzr0h79498ed.png",
+    "photoFit": "cover",
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 28,
+    "photoPosY": 50
+  },
+  {
+    "id": "mng0lozvc7b933",
+    "name": "阿寶",
+    "genre": "",
+    "bio": "山寨音樂餐廳\r\nPlan B歐陸街頭小酒館\r\nBe heroes cafe駐唱咖啡餐酒館\r\n有間客棧 駐唱餐酒館\r\nMoonwell Bar&Bistro月見餐酒館\r\n享聚餐酒館 Savor Bistro\r\nGlad歌勒藝文",
+    "photo": "/uploads/artists/mng0lozq2195cf.png",
+    "photoFit": "cover",
+    "photoPosY": 6,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 29
+  },
+  {
+    "id": "mng0memt62a454",
+    "name": "李瑞興",
+    "genre": "",
+    "bio": "Sappho Live Jazz 音樂會\r\n八里柚子節團體演奏\r\n新北市蘆提樂團功學社音樂會\r\n婚禮樂手\r\n爵士貓大樂團",
+    "photo": "/uploads/artists/mng0memoc001df.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 30
+  },
+  {
+    "id": "mng0mxz9fbac6b",
+    "name": "吳靜慧",
+    "genre": "",
+    "bio": "2016永康商圈父親節快閃女主唱\r\n2018永康商圈母親節快閃女主唱\r\n詞曲創作者\r\n駐唱歌手\r\n福音創作歌手\r\n致福益人學苑歌唱班老師\r\n以琳教會歌唱班老師",
+    "photo": "/uploads/artists/mng0mxz5bf188b.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 31
+  },
+  {
+    "id": "mng0oinf112ef5",
+    "name": "喆靈",
+    "genre": "",
+    "bio": "105年基督教北部教會歌唱比賽冠軍\r\n109年桃園好聲音歌唱賽第三名\r\n北部 Live Band 及夜店駐唱\r\n婚禮&尾牙 主持人兼歌手\r\n112年銘傳大學66週年校慶歌手\r\n111年知名航空公司高層指定歌手",
+    "photo": "/uploads/artists/mng0oinc43bf75.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 32
+  },
+  {
+    "id": "mng0whmp67d225",
+    "name": "金美均 (小花)",
+    "genre": "",
+    "bio": "歐海納文創音樂老師\r\n裸裸市集\r\n女士優先音樂會\r\n一起去看花個人專場音樂會\r\n新北市街頭藝人\r\n鼓韻樂器音樂老師",
+    "photo": "/uploads/artists/mng0whmm79c209.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 33
+  },
+  {
+    "id": "mng0wzo4ce4299",
+    "name": "林聖峰 Eric",
+    "genre": "",
+    "bio": "百老匯音樂劇演員\r\n古典歌劇演員\r\n洛杉磯地方音樂劇團\r\n紐約Regina Opera歌劇團\r\nNBA華盛頓巫師隊國歌歌手",
+    "photo": "/uploads/artists/mng0wzo19f8ff4.png",
+    "photoFit": "cover",
+    "photoPosY": 19,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 34
+  },
+  {
+    "id": "mng0xi6l73832b",
+    "name": "里茶叔叔",
+    "genre": "",
+    "bio": "YouTube和抖音吉他網紅，上海和蘇州和台北各地演出經驗15年，一把吉他，可以帶給你回憶童年的溫柔情歌，也可以帶給你西洋老搖滾，邀請你一起和他一起搖頭晃腦的享受音樂吧。",
+    "photo": "/uploads/artists/mng0xi6k57eb14.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 35
+  },
+  {
+    "id": "mng117ik20909b",
+    "name": "Joe",
+    "genre": "",
+    "bio": "江湖人稱 松山陳昇 饒河李宗盛\r\n\r\n一個愛唱歌的人 Joe想唱歌給你聽\r\n我有歌你有故事嗎 !?\r\n\r\n在這或那，無所顧忌，隨處隨機開唱!!!",
+    "photo": "/uploads/artists/mng117ig162d86.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 36
+  },
+  {
+    "id": "mng11meu3d7571",
+    "name": "Marcus",
+    "genre": "",
+    "bio": "喜歡用吉他詮釋音樂\r\n吉他陪伴了我很多很多年\r\n歡迎來現場感受琴聲的溫暖！",
+    "photo": "/uploads/artists/mng11mep6d94b4.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 37
+  },
+  {
+    "id": "mng14wi11ebfdd",
+    "name": "貝塔樂團",
+    "genre": "",
+    "bio": "成員分別來自不同的工作崗位，同樣的是對音樂充滿熱情，想重拾年少那份音樂夢。\r\n白天認真上班，下班後排除萬難也要來個熱血組團紓壓。\r\n由資深阿法樂團吉他手-龍哥 領軍，帶領著一群隊友，不畏艱難參加演出。\r\n貝塔樂團參加蝌蚪音樂節也邁入第三年囉！期待著每年我們所帶來的歌曲與成長蛻變！",
+    "photo": "/uploads/artists/mng14whx4a91ca.png",
+    "photoFit": "cover",
+    "photoPosY": 34,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 38
+  },
+  {
+    "id": "mng16d9cc6c834",
+    "name": "一群暴麋",
+    "genre": "",
+    "bio": "兩隻老師叛逃成鹿，用笑聲跟音樂一起迷路。\r\n成員包括吉他手／主唱 （某個愛拿琴有在運動的男生），以及鋼琴、長笛手／主唱 （某個一看就知道不愛運動的女生）。兩人都熱愛音樂、喜劇與不務正業，曾經在教學界打滾多年，最終認命——既然改造不了學生，不如改造自己的世界。",
+    "photo": "/uploads/artists/mng16d9894837b.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 39
+  },
+  {
+    "id": "mng17fgtc58598",
+    "name": "酷麻。嗨樂隊",
+    "genre": "",
+    "bio": "團長：麻海師\r\n˙音樂唱片製作人、\r\n˙全國創作大賽首獎、\r\n˙全國健康舞大賽冠軍－歌曲創作\r\n˙木船、木吉他…等駐唱歌手\r\n\r\n酷麻兄弟-KUMA 演出經歷\r\n˙敖幼祥之烏龍院動漫 騰訊「破十億」點閱率\r\n˙文化部成語故事系列-主題歌 唱跳主角\r\n˙花東青少年-樂舞爭霸戰 特優獎",
+    "photo": "/uploads/artists/mng17fgp3273f6.png",
+    "photoFit": "cover",
+    "photoPosY": 48,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 40
+  },
+  {
+    "id": "mng17t5xcb1ad7",
+    "name": "Jusfun 義和團",
+    "genre": "",
+    "bio": "成立十五年的 Jusfun 樂團由一群搖滾老炮兒組成，主打 70 年代的經典美式搖滾，Jusfun樂團帶領大家重溫當年的熱力曲風！無論你是迷戀黑膠音樂，還是懷舊 70s 氛圍，這場演出將重現許多知名歌曲，如《No Matter What》、《Losing My Religion》、《Don't Let Me Down》以及經典台語歌曲《志明與春嬌》等。",
+    "photo": "/uploads/artists/mng17t5vad1095.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 41
+  },
+  {
+    "id": "mng06czo029305",
+    "name": "建翔 Jason",
+    "genre": "",
+    "bio": "2016～2019年 雙溪蘇義興餐駐唱\r\n2021年 礁溪寒沐酒店大廳駐唱\r\n2022年 礁溪寒沐酒店大廳酒吧駐唱\r\n2022年 新竹How客吧駐唱\r\n2022年 基隆BZ Corner駐唱\r\n2022年 台北市有間客棧餐酒館駐唱\r\n2022年 新竹青農市集演出\r\n2022年 新竹縣政府圖書館市集演出\r\n2022年 流浪藝術漫遊市集演出\r\n2022年 台中益民商圈演出",
+    "photo": "/uploads/artists/mng06czj232716.png",
+    "photoFit": "cover",
+    "photoPosY": 50,
+    "links": {
+      "ig": "",
+      "youtube": "",
+      "spotify": ""
+    },
+    "order": 42
+  }
+]

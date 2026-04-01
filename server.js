@@ -9,8 +9,27 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Helpers ───
+const SEED_DIR = path.join(__dirname, 'data-seed'); // 初始資料（git 裡的）
 const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const UPLOADS_DIR = fs.existsSync('/app/data') ? '/app/data/uploads' : path.join(__dirname, 'uploads');
+
+// 確保 uploads 目錄存在
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// Volume 初始化：如果 data 目錄是空的（新 Volume），從 seed 複製初始資料
+(function initDataDir() {
+  if (!fs.existsSync(SEED_DIR)) return; // 本地開發沒有 seed 目錄
+  const dataFiles = fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.json'));
+  if (dataFiles.length === 0) {
+    console.log('Volume 是空的，正在複製初始資料...');
+    const seedFiles = fs.readdirSync(SEED_DIR).filter(f => f.endsWith('.json'));
+    seedFiles.forEach(f => {
+      fs.copyFileSync(path.join(SEED_DIR, f), path.join(DATA_DIR, f));
+      console.log('  複製:', f);
+    });
+    console.log('初始資料複製完成！');
+  }
+})();
 
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8')); }
