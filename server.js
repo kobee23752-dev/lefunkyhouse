@@ -157,10 +157,21 @@ async function sendConfirmedEmail(reservation) {
 }
 
 // ─── Middleware ───
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── 批次上傳 API（用於遷移圖片到 Volume）───
+app.post('/api/bulk-upload', authMiddleware, (req, res) => {
+  const { filePath, data } = req.body; // filePath: "artists/xxx.jpg", data: base64
+  if (!filePath || !data) return res.status(400).json({ error: '缺少參數' });
+  const fullPath = path.join(UPLOADS_DIR, filePath);
+  const dir = path.dirname(fullPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(fullPath, Buffer.from(data, 'base64'));
+  res.json({ ok: true, path: '/uploads/' + filePath });
+});
 
 // ─── Auth (persistent sessions) ───
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
