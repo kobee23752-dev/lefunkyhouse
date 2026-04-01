@@ -279,23 +279,68 @@
 
         /* Responsive */
         @media(max-width:768px){
-            header{padding:24px 16px 20px}
-            .header-inner{flex-direction:column;gap:10px}
-            .header-logo{width:60px;height:60px}
-            .header-text{text-align:center}
-            .logo-cn{font-size:1.2rem;letter-spacing:.15em}
-            .logo-en{font-size:.8rem;letter-spacing:.2em}
-            main{padding:30px 16px}
-            h2{font-size:1.2rem}
+            header{padding:16px 14px 14px}
+            .header-inner{flex-direction:row;gap:12px;justify-content:center}
+            .header-logo{width:48px;height:48px}
+            .header-text{text-align:left}
+            .logo-cn{font-size:1.1rem;letter-spacing:.1em}
+            .logo-en{font-size:.7rem;letter-spacing:.15em}
+            nav{justify-content:flex-start;padding:0 4px}
+            nav a{padding:12px 10px;font-size:.78rem;letter-spacing:.02em}
+            .nav-logo{width:28px;height:28px;margin:0 2px 0 6px}
+            main{padding:20px 14px}
+            h2{font-size:1.1rem;margin-bottom:2px}
+            .sub{font-size:.78rem;margin-bottom:14px}
+            .home-hero{margin-bottom:30px}
+            .home-hero p{font-size:.92rem;line-height:1.8}
+            .news-banner{padding:16px 18px;margin-top:24px}
+            .news-item{font-size:.9rem;gap:10px;padding:10px 0}
+            .news-date{min-width:60px;font-size:.72rem}
             .res-layout{grid-template-columns:1fr}
+            .res-info{padding:20px}
+            .form-card{padding:20px}
             .fr{grid-template-columns:1fr}
             .gallery-grid{grid-template-columns:repeat(2,1fr)}
             .menu-images-grid{grid-template-columns:1fr}
-            .artists-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+            .artists-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+            .artist-name{font-size:.8rem}
+            .ticket-card{width:160px;height:380px}
+            .ticket-poster{height:200px}
+            .ticket-body{padding:10px}
+            .ticket-title{font-size:.85rem}
+            .ticket-date{font-size:.72rem}
+            .ticket-price{font-size:1rem}
+            .btn-ticket{padding:6px 12px;font-size:.78rem}
+            .tickets-grid{gap:10px}
+            .rental-hero{font-size:.92rem}
+            .rental-grid{gap:14px}
+            .rental-card{padding:20px}
+            .rental-price{font-size:1.3rem}
+            .transport-grid{gap:14px}
+            .transport-card{padding:20px}
+            .faq-q{font-size:.95rem;padding:16px 0}
+            .faq-a-inner{font-size:.9rem}
+            .info-card{padding:20px}
+            footer{padding:28px 14px}
         }
         @media(max-width:480px){
-            nav a{padding:14px 10px;font-size:.75rem}
-            .logo-cn{font-size:1.1rem;letter-spacing:.1em}
+            header{padding:12px 10px 10px}
+            .header-logo{width:40px;height:40px}
+            .logo-cn{font-size:1rem;letter-spacing:.08em}
+            .logo-en{font-size:.65rem}
+            nav a{padding:10px 8px;font-size:.72rem}
+            .nav-logo{width:24px;height:24px;margin:0 2px 0 4px}
+            main{padding:16px 12px}
+            .ticket-card{width:calc(50% - 6px);height:auto;min-height:320px}
+            .ticket-poster{height:180px}
+            .tickets-grid{gap:8px}
+            .svc-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+            .svc{padding:16px 8px}
+            .svc .icon{font-size:1.3rem;margin-bottom:6px}
+            .svc .label{font-size:.78rem}
+            .rental-card h3{font-size:1rem}
+            .rental-price{font-size:1.1rem}
+            .eq-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
         }
     </style>
 </head>
