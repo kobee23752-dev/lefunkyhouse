@@ -279,23 +279,23 @@
 
         /* Responsive */
         @media(max-width:768px){
-            header{padding:30px 16px 24px}
-            .header-inner{gap:16px}
-            .header-logo{width:70px;height:70px}
-            .logo-cn{font-size:1.4rem;letter-spacing:.2em}
-            main{padding:40px 16px}
-            h2{font-size:1.6rem}
-            .svc-grid{grid-template-columns:repeat(3,1fr)}
+            header{padding:24px 16px 20px}
+            .header-inner{flex-direction:column;gap:10px}
+            .header-logo{width:60px;height:60px}
+            .header-text{text-align:center}
+            .logo-cn{font-size:1.2rem;letter-spacing:.15em}
+            .logo-en{font-size:.8rem;letter-spacing:.2em}
+            main{padding:30px 16px}
+            h2{font-size:1.2rem}
             .res-layout{grid-template-columns:1fr}
             .fr{grid-template-columns:1fr}
             .gallery-grid{grid-template-columns:repeat(2,1fr)}
             .menu-images-grid{grid-template-columns:1fr}
-            .artists-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+            .artists-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
         }
         @media(max-width:480px){
-            .svc-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-            .svc{padding:20px 10px}
-            nav a{padding:14px 12px;font-size:.78rem}
+            nav a{padding:14px 10px;font-size:.75rem}
+            .logo-cn{font-size:1.1rem;letter-spacing:.1em}
         }
     </style>
 </head>
