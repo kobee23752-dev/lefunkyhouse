@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配色方案預覽 - 樂放音樂展演空間</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans TC',sans-serif;background:#f5f3ef;color:#2a2a2a;min-height:100vh;padding:60px 20px}
+        h1{text-align:center;font-size:1.6rem;margin-bottom:8px;font-weight:400;letter-spacing:.15em;color:#333}
+        .hint{text-align:center;color:#999;font-size:.85rem;margin-bottom:56px;font-weight:300}
+        .schemes{display:grid;grid-template-columns:1fr;gap:56px;max-width:880px;margin:0 auto}
+        .scheme{border-radius:14px;overflow:hidden;cursor:pointer;transition:all .4s;border:2px solid transparent;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+        .scheme:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.1)}
+        .scheme.selected{border-color:#4a7c6f;box-shadow:0 0 0 1px #4a7c6f,0 12px 40px rgba(74,124,111,.12)}
+        .scheme-label{padding:18px 28px;display:flex;justify-content:space-between;align-items:center;font-size:1rem;font-weight:500;letter-spacing:.08em}
+        .scheme-label .tag{font-size:.72rem;font-weight:400;padding:4px 14px;border-radius:20px}
+        .mock{padding:0}
+        .mock-header{text-align:center;padding:48px 24px 36px;position:relative}
+        .mock-logo{font-size:1.4rem;font-weight:500;letter-spacing:.4em;margin-bottom:6px}
+        .mock-en{font-family:'Cormorant Garamond',serif;font-size:.85rem;letter-spacing:.4em;text-transform:uppercase;margin-bottom:14px;font-weight:500}
+        .mock-divider{width:32px;height:1px;margin:0 auto 14px}
+        .mock-tag{font-size:.68rem;letter-spacing:.25em;text-transform:uppercase}
+        .mock-nav{display:flex;justify-content:center;gap:0;padding:0;border-bottom-width:1px;border-bottom-style:solid}
+        .mock-nav span{padding:15px 20px;font-size:.82rem;font-weight:500;letter-spacing:.12em}
+        .mock-body{padding:36px 28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+        .mock-card{border-width:1px;border-style:solid;border-radius:8px;padding:24px}
+        .mock-card h3{font-family:'Cormorant Garamond',serif;font-size:1.05rem;margin-bottom:10px;font-weight:600;letter-spacing:.05em}
+        .mock-card p{font-size:.78rem;line-height:1.9;margin-bottom:16px}
+        .mock-btn{display:inline-block;padding:9px 28px;border-radius:4px;font-size:.78rem;font-weight:500;letter-spacing:.1em;border:none}
+        .mock-input{width:100%;padding:10px 14px;border-radius:4px;border-width:1px;border-style:solid;font-size:.78rem;margin-bottom:10px;outline:none;font-family:'Noto Sans TC',sans-serif}
+        .mock-footer{text-align:center;padding:18px;font-size:.68rem;border-top-width:1px;border-top-style:solid;letter-spacing:.1em}
+        .swatches{display:flex;gap:8px;padding:14px 28px;justify-content:center}
+        .swatch{width:32px;height:32px;border-radius:50%;border:2px solid rgba(0,0,0,.06)}
+        .pick-btn{display:block;margin:64px auto 0;padding:14px 48px;background:#4a7c6f;color:#fff;border:none;border-radius:6px;font-size:.9rem;font-weight:500;cursor:pointer;font-family:'Noto Sans TC',sans-serif;letter-spacing:.15em;transition:all .3s}
+        .pick-btn:hover{background:#3d6b5f;box-shadow:0 4px 16px rgba(74,124,111,.25)}
+        .pick-btn:disabled{background:#ccc;cursor:not-allowed;box-shadow:none}
+        .selected-text{text-align:center;margin-top:16px;color:#4a7c6f;font-size:.85rem;display:none}
+    </style>
+</head>
+<body>
+
+<h1>選擇你喜歡的質感配色</h1>
+<p class="hint">注重留白與舒適感，告訴我你喜歡的編號</p>
+
+<div class="schemes">
+
+<!-- ══════ 1: 暖灰白 Warm Minimal ══════ -->
+<div class="scheme" data-scheme="1" onclick="sel(1)">
+    <div class="scheme-label" style="background:#f7f5f0;color:#3a3630;border-bottom:1px solid #eae6de">
+        <span>方案 1 — 暖灰白 Warm Minimal</span>
+        <span class="tag" style="background:#eae6de;color:#8a8070">溫暖・自然・輕盈</span>
+    </div>
+    <div class="swatches" style="background:#f2efe8">
+        <div class="swatch" style="background:#f7f5f0"></div>
+        <div class="swatch" style="background:#ffffff"></div>
+        <div class="swatch" style="background:#3a3630"></div>
+        <div class="swatch" style="background:#8a7e6a"></div>
+        <div class="swatch" style="background:#c4b898"></div>
+        <div class="swatch" style="background:#7a9e8e"></div>
+    </div>
+    <div class="mock" style="background:#f7f5f0;color:#3a3630">
+        <div class="mock-header" style="background:#f7f5f0">
+            <div class="mock-logo" style="color:#3a3630">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#8a7e6a">Le Funky House</div>
+            <div class="mock-divider" style="background:#c4b898"></div>
+            <div class="mock-tag" style="color:#b0a890">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#fff;border-bottom-color:#eae6de">
+            <span style="color:#b0a890">首頁</span>
+            <span style="color:#3a3630">歌手</span>
+            <span style="color:#b0a890">節目表</span>
+            <span style="color:#b0a890">菜單</span>
+            <span style="color:#b0a890">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#f7f5f0">
+            <div class="mock-card" style="background:#fff;border-color:#eae6de">
+                <h3 style="color:#3a3630">本週演出</h3>
+                <p style="color:#8a8070">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#3a3630;color:#f7f5f0">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#fff;border-color:#eae6de">
+                <h3 style="color:#3a3630">線上訂位</h3>
+                <input class="mock-input" style="background:#f7f5f0;border-color:#e0dbd0;color:#3a3630" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#f7f5f0;border-color:#e0dbd0;color:#3a3630" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#8a7e6a;color:#fff">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#eae6de;color:#c0b8a8">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+<!-- ══════ 2: 墨綠白 Forest Clean ══════ -->
+<div class="scheme" data-scheme="2" onclick="sel(2)">
+    <div class="scheme-label" style="background:#f5f7f4;color:#2a3a2e;border-bottom:1px solid #dde6da">
+        <span>方案 2 — 墨綠白 Forest Clean</span>
+        <span class="tag" style="background:#dde6da;color:#5a7a62">清新・文青・自然</span>
+    </div>
+    <div class="swatches" style="background:#eef2ec">
+        <div class="swatch" style="background:#f5f7f4"></div>
+        <div class="swatch" style="background:#ffffff"></div>
+        <div class="swatch" style="background:#2a3a2e"></div>
+        <div class="swatch" style="background:#5a7a62"></div>
+        <div class="swatch" style="background:#b8a872"></div>
+        <div class="swatch" style="background:#8aaa90"></div>
+    </div>
+    <div class="mock" style="background:#f5f7f4;color:#2a3a2e">
+        <div class="mock-header" style="background:#2a3a2e">
+            <div class="mock-logo" style="color:#f0f2ee">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#8aaa90">Le Funky House</div>
+            <div class="mock-divider" style="background:#5a7a62"></div>
+            <div class="mock-tag" style="color:rgba(255,255,255,.35)">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#fff;border-bottom-color:#dde6da">
+            <span style="color:#a0b0a4">首頁</span>
+            <span style="color:#2a3a2e">歌手</span>
+            <span style="color:#a0b0a4">節目表</span>
+            <span style="color:#a0b0a4">菜單</span>
+            <span style="color:#a0b0a4">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#f5f7f4">
+            <div class="mock-card" style="background:#fff;border-color:#dde6da">
+                <h3 style="color:#2a3a2e">本週演出</h3>
+                <p style="color:#6a8a70">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#2a3a2e;color:#f0f2ee">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#fff;border-color:#dde6da">
+                <h3 style="color:#2a3a2e">線上訂位</h3>
+                <input class="mock-input" style="background:#f0f3ee;border-color:#d0dace;color:#2a3a2e" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#f0f3ee;border-color:#d0dace;color:#2a3a2e" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#5a7a62;color:#fff">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#dde6da;color:#b0c0b4">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+<!-- ══════ 3: 藏青奶白 Navy Ivory ══════ -->
+<div class="scheme" data-scheme="3" onclick="sel(3)">
+    <div class="scheme-label" style="background:#f6f4ef;color:#1e2d3d;border-bottom:1px solid #e4dfd4">
+        <span>方案 3 — 藏青奶白 Navy Ivory</span>
+        <span class="tag" style="background:#e4dfd4;color:#6a7a8a">穩重・優雅・經典</span>
+    </div>
+    <div class="swatches" style="background:#efeae0">
+        <div class="swatch" style="background:#f6f4ef"></div>
+        <div class="swatch" style="background:#ffffff"></div>
+        <div class="swatch" style="background:#1e2d3d"></div>
+        <div class="swatch" style="background:#4a6070"></div>
+        <div class="swatch" style="background:#c4a55a"></div>
+        <div class="swatch" style="background:#7a9a8a"></div>
+    </div>
+    <div class="mock" style="background:#f6f4ef;color:#1e2d3d">
+        <div class="mock-header" style="background:#1e2d3d">
+            <div class="mock-logo" style="color:#f0ede5">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#c4a55a">Le Funky House</div>
+            <div class="mock-divider" style="background:linear-gradient(90deg,transparent,#c4a55a,transparent)"></div>
+            <div class="mock-tag" style="color:rgba(255,255,255,.35)">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#fff;border-bottom-color:#e4dfd4">
+            <span style="color:#a0a8b0">首頁</span>
+            <span style="color:#1e2d3d">歌手</span>
+            <span style="color:#a0a8b0">節目表</span>
+            <span style="color:#a0a8b0">菜單</span>
+            <span style="color:#a0a8b0">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#f6f4ef">
+            <div class="mock-card" style="background:#fff;border-color:#e4dfd4">
+                <h3 style="color:#1e2d3d">本週演出</h3>
+                <p style="color:#6a7a8a">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#1e2d3d;color:#f0ede5">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#fff;border-color:#e4dfd4">
+                <h3 style="color:#1e2d3d">線上訂位</h3>
+                <input class="mock-input" style="background:#f2efe8;border-color:#ddd8cc;color:#1e2d3d" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#f2efe8;border-color:#ddd8cc;color:#1e2d3d" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#c4a55a;color:#fff">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#e4dfd4;color:#b8b0a0">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+<!-- ══════ 4: 炭灰白 Charcoal White ══════ -->
+<div class="scheme" data-scheme="4" onclick="sel(4)">
+    <div class="scheme-label" style="background:#f8f8f6;color:#2c2c2c;border-bottom:1px solid #e8e8e4">
+        <span>方案 4 — 炭灰白 Charcoal White</span>
+        <span class="tag" style="background:#e8e8e4;color:#888">極簡・高級・俐落</span>
+    </div>
+    <div class="swatches" style="background:#f0f0ec">
+        <div class="swatch" style="background:#f8f8f6"></div>
+        <div class="swatch" style="background:#ffffff"></div>
+        <div class="swatch" style="background:#2c2c2c"></div>
+        <div class="swatch" style="background:#666"></div>
+        <div class="swatch" style="background:#b8a06a"></div>
+        <div class="swatch" style="background:#d4d0c8"></div>
+    </div>
+    <div class="mock" style="background:#f8f8f6;color:#2c2c2c">
+        <div class="mock-header" style="background:#2c2c2c">
+            <div class="mock-logo" style="color:#f0f0ee">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#b8a06a">Le Funky House</div>
+            <div class="mock-divider" style="background:#555"></div>
+            <div class="mock-tag" style="color:rgba(255,255,255,.3)">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#fff;border-bottom-color:#e8e8e4">
+            <span style="color:#bbb">首頁</span>
+            <span style="color:#2c2c2c">歌手</span>
+            <span style="color:#bbb">節目表</span>
+            <span style="color:#bbb">菜單</span>
+            <span style="color:#bbb">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#f8f8f6">
+            <div class="mock-card" style="background:#fff;border-color:#e8e8e4">
+                <h3 style="color:#2c2c2c">本週演出</h3>
+                <p style="color:#888">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#2c2c2c;color:#f8f8f6">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#fff;border-color:#e8e8e4">
+                <h3 style="color:#2c2c2c">線上訂位</h3>
+                <input class="mock-input" style="background:#f4f4f2;border-color:#e0e0dc;color:#2c2c2c" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#f4f4f2;border-color:#e0e0dc;color:#2c2c2c" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#b8a06a;color:#fff">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#e8e8e4;color:#ccc">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+<!-- ══════ 5: 深夜質感 Midnight Refined ══════ -->
+<div class="scheme" data-scheme="5" onclick="sel(5)">
+    <div class="scheme-label" style="background:#1a1a1a;color:#e8e4dc;border-bottom:1px solid #2a2a2a">
+        <span>方案 5 — 深夜質感 Midnight Refined</span>
+        <span class="tag" style="background:#2a2a2a;color:#888">深色・簡約・高端</span>
+    </div>
+    <div class="swatches" style="background:#141414">
+        <div class="swatch" style="background:#111111"></div>
+        <div class="swatch" style="background:#1e1e1e"></div>
+        <div class="swatch" style="background:#e8e4dc"></div>
+        <div class="swatch" style="background:#8a8478"></div>
+        <div class="swatch" style="background:#c4ad7a"></div>
+        <div class="swatch" style="background:#3a3a3a"></div>
+    </div>
+    <div class="mock" style="background:#111;color:#e8e4dc">
+        <div class="mock-header" style="background:#111">
+            <div class="mock-logo" style="color:#e8e4dc">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#c4ad7a">Le Funky House</div>
+            <div class="mock-divider" style="background:#3a3a3a"></div>
+            <div class="mock-tag" style="color:#555">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#161616;border-bottom-color:#2a2a2a">
+            <span style="color:#666">首頁</span>
+            <span style="color:#e8e4dc">歌手</span>
+            <span style="color:#666">節目表</span>
+            <span style="color:#666">菜單</span>
+            <span style="color:#666">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#111">
+            <div class="mock-card" style="background:#1a1a1a;border-color:#2a2a2a">
+                <h3 style="color:#e8e4dc">本週演出</h3>
+                <p style="color:#8a8478">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#e8e4dc;color:#111">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#1a1a1a;border-color:#2a2a2a">
+                <h3 style="color:#e8e4dc">線上訂位</h3>
+                <input class="mock-input" style="background:#1e1e1e;border-color:#333;color:#e8e4dc" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#1e1e1e;border-color:#333;color:#e8e4dc" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#c4ad7a;color:#111">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#2a2a2a;color:#444">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+<!-- ══════ 6: 莫蘭迪 Morandi ══════ -->
+<div class="scheme" data-scheme="6" onclick="sel(6)">
+    <div class="scheme-label" style="background:#f0eee8;color:#4a4640;border-bottom:1px solid #ddd8ce">
+        <span>方案 6 — 莫蘭迪 Morandi Tone</span>
+        <span class="tag" style="background:#ddd8ce;color:#8a8478">柔和・高級灰・藝術感</span>
+    </div>
+    <div class="swatches" style="background:#e8e4dc">
+        <div class="swatch" style="background:#f0eee8"></div>
+        <div class="swatch" style="background:#faf8f4"></div>
+        <div class="swatch" style="background:#5c5650"></div>
+        <div class="swatch" style="background:#8a857c"></div>
+        <div class="swatch" style="background:#a09880"></div>
+        <div class="swatch" style="background:#8a9e90"></div>
+    </div>
+    <div class="mock" style="background:#f0eee8;color:#4a4640">
+        <div class="mock-header" style="background:#5c5650">
+            <div class="mock-logo" style="color:#f0eee8">樂放音樂展演空間</div>
+            <div class="mock-en" style="color:#c4b898">Le Funky House</div>
+            <div class="mock-divider" style="background:#8a857c"></div>
+            <div class="mock-tag" style="color:rgba(255,255,255,.35)">Coffee · Bar · Food · Live House</div>
+        </div>
+        <div class="mock-nav" style="background:#faf8f4;border-bottom-color:#ddd8ce">
+            <span style="color:#b0a89a">首頁</span>
+            <span style="color:#4a4640">歌手</span>
+            <span style="color:#b0a89a">節目表</span>
+            <span style="color:#b0a89a">菜單</span>
+            <span style="color:#b0a89a">訂位</span>
+        </div>
+        <div class="mock-body" style="background:#f0eee8">
+            <div class="mock-card" style="background:#faf8f4;border-color:#ddd8ce">
+                <h3 style="color:#4a4640">本週演出</h3>
+                <p style="color:#8a857c">週五爵士之夜，邀請金曲歌手現場演出，限量座位預約中...</p>
+                <span class="mock-btn" style="background:#5c5650;color:#f0eee8">立即訂位</span>
+            </div>
+            <div class="mock-card" style="background:#faf8f4;border-color:#ddd8ce">
+                <h3 style="color:#4a4640">線上訂位</h3>
+                <input class="mock-input" style="background:#eceae4;border-color:#d5d0c6;color:#4a4640" placeholder="您的姓名" readonly>
+                <input class="mock-input" style="background:#eceae4;border-color:#d5d0c6;color:#4a4640" placeholder="聯絡電話" readonly>
+                <span class="mock-btn" style="background:#a09880;color:#fff">送出預約</span>
+            </div>
+        </div>
+        <div class="mock-footer" style="border-top-color:#ddd8ce;color:#c0b8a8">© 2026 樂放音樂展演空間</div>
+    </div>
+</div>
+
+</div>
+
+<button class="pick-btn" id="pickBtn" disabled>請先選擇一個配色方案</button>
+<p class="selected-text" id="selectedText"></p>
+
+<script>
+let selected = null;
+const names = {
+    1:'暖灰白 Warm Minimal',
+    2:'墨綠白 Forest Clean',
+    3:'藏青奶白 Navy Ivory',
+    4:'炭灰白 Charcoal White',
+    5:'深夜質感 Midnight Refined',
+    6:'莫蘭迪 Morandi Tone'
+};
+function sel(n) {
+    selected = n;
+    document.querySelectorAll('.scheme').forEach(s => s.classList.remove('selected'));
+    document.querySelector(`[data-scheme="${n}"]`).classList.add('selected');
+    const btn = document.getElementById('pickBtn');
+    btn.disabled = false;
+    btn.textContent = '我選方案 ' + n + '「' + names[n] + '」！';
+    btn.onclick = () => {
+        const el = document.getElementById('selectedText');
+        el.style.display = 'block';
+        el.textContent = '✅ 你選了方案 ' + n + '「' + names[n] + '」— 請回去告訴我編號！';
+    };
+}
+</script>
+
+</body>
+</html>

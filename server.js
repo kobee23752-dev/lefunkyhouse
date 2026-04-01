@@ -1,0 +1,963 @@
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ─── Helpers ───
+const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+function readJSON(file) {
+  try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8')); }
+  catch { return file.endsWith('.json') && file !== 'menu.json' && !file.includes('settings') ? [] : {}; }
+}
+
+function writeJSON(file, data) {
+  fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function genId() {
+  return Date.now().toString(36) + crypto.randomBytes(3).toString('hex');
+}
+
+// ─── Email Setup ───
+const OWNER_EMAIL = 'a0931223353@gmail.com';
+const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
+
+function genConfirmToken(id) {
+  return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
+}
+
+function getEmailSettings() {
+  const settings = readJSON('settings.json');
+  return settings.smtp || null;
+}
+
+function createTransporter() {
+  const smtp = getEmailSettings();
+  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) return null;
+  return nodemailer.createTransport({
+    host: smtp.host,
+    port: smtp.port || 587,
+    secure: smtp.secure || false,
+    auth: { user: smtp.user, pass: smtp.pass }
+  });
+}
+
+async function sendReservationEmails(reservation) {
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.log('SMTP 未設定，跳過寄信。訂位資料:', reservation.name, reservation.date, reservation.time);
+    return;
+  }
+  const smtp = getEmailSettings();
+  const dateStr = reservation.date;
+  const timeStr = reservation.time;
+
+  // 寄給老闆娘的通知信（含確認按鈕）
+  const confirmToken = genConfirmToken(reservation.id);
+  const confirmUrl = `${SITE_URL}/api/reservations/${reservation.id}/confirm?token=${confirmToken}`;
+  try {
+    await transporter.sendMail({
+      from: `"樂放訂位系統" <${smtp.user}>`,
+      to: OWNER_EMAIL,
+      subject: `【新訂位通知】${reservation.name} - ${dateStr} ${timeStr} (${reservation.guests}位)`,
+      html: `
+        <div style="font-family:sans-serif;max-width:500px;padding:20px">
+          <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新訂位通知</h2>
+          <table style="font-size:14px;line-height:2">
+            <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${reservation.name}</strong></td></tr>
+            <tr><td style="color:#888">電話</td><td>${reservation.phone}</td></tr>
+            <tr><td style="color:#888">Email</td><td>${reservation.email || '(未提供)'}</td></tr>
+            <tr><td style="color:#888">日期</td><td>${dateStr}</td></tr>
+            <tr><td style="color:#888">時間</td><td>${timeStr}</td></tr>
+            <tr><td style="color:#888">人數</td><td>${reservation.guests} 位</td></tr>
+            ${reservation.note ? `<tr><td style="color:#888">備註</td><td>${reservation.note}</td></tr>` : ''}
+          </table>
+          <div style="margin-top:24px;text-align:center">
+            <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此訂位</a>
+          </div>
+          <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動更新訂位狀態${reservation.email ? '，並寄送確認信給客人' : ''}</p>
+          <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+        </div>
+      `
+    });
+    console.log('已寄送訂位通知信給老闆娘');
+  } catch (e) {
+    console.error('寄送老闆娘通知信失敗:', e.message);
+  }
+}
+
+// ─── 確認訂位通知信（寄給客人）───
+async function sendConfirmedEmail(reservation) {
+  const transporter = createTransporter();
+  if (!transporter || !reservation.email) return;
+  const smtp = getEmailSettings();
+  try {
+    await transporter.sendMail({
+      from: `"樂放音樂展演空間" <${smtp.user}>`,
+      to: reservation.email,
+      subject: `【樂放音樂展演空間】您的訂位已確認 - ${reservation.date} ${reservation.time}`,
+      html: `
+        <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
+          <div style="text-align:center;margin-bottom:24px">
+            <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
+            <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
+          </div>
+          <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
+            <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 訂位已確認</h2>
+            <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
+              ${reservation.name} 您好，<br>
+              您的訂位已確認成功，我們期待您的光臨！
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">日期</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.date}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.time}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">人數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.guests} 位</td></tr>
+            </table>
+            <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
+            <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
+              📍 新北市淡水區中正路330號（老街台電正對面）<br>
+              📞 0931-223-353（王蝴蝶）<br>
+              ⚠️ 逾時 15 分鐘未到將自動取消訂位
+            </p>
+          </div>
+          <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+        </div>
+      `
+    });
+    console.log('已寄送訂位確認信給客人:', reservation.email);
+  } catch (e) {
+    console.error('寄送確認信失敗:', e.message);
+  }
+}
+
+// ─── Middleware ───
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── Auth (persistent sessions) ───
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+
+function loadSessions() {
+  try {
+    const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
+    const map = new Map();
+    const now = Date.now();
+    for (const [token, ts] of Object.entries(data)) {
+      if (now - ts < 7 * 24 * 60 * 60 * 1000) map.set(token, ts); // 保留 7 天內的
+    }
+    return map;
+  } catch { return new Map(); }
+}
+
+function saveSessions() {
+  const obj = {};
+  for (const [token, ts] of activeSessions) obj[token] = ts;
+  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(obj), 'utf-8');
+}
+
+const activeSessions = loadSessions();
+
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token || !activeSessions.has(token)) {
+    return res.status(401).json({ error: '未授權' });
+  }
+  activeSessions.set(token, Date.now());
+  saveSessions();
+  next();
+}
+
+// Clean expired sessions (7 days)
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, ts] of activeSessions) {
+    if (now - ts > 7 * 24 * 60 * 60 * 1000) activeSessions.delete(token);
+  }
+  saveSessions();
+}, 60 * 60 * 1000);
+
+// ─── File Upload Config ───
+function makeStorage(subdir) {
+  return multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(UPLOADS_DIR, subdir);
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, genId() + ext);
+    }
+  });
+}
+
+const uploadSchedule = multer({
+  storage: makeStorage('schedule'),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|webp)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  }
+});
+
+const uploadArtist = multer({
+  storage: makeStorage('artists'),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|webp)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  }
+});
+
+const uploadGallery = multer({
+  storage: makeStorage('gallery'),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|webp)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  }
+});
+
+// ═══════════════════════════════════════
+//  AUTH ROUTES
+// ═══════════════════════════════════════
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+  const settings = readJSON('settings.json');
+  if (password === settings.adminPassword) {
+    const token = crypto.randomBytes(32).toString('hex');
+    activeSessions.set(token, Date.now());
+    saveSessions();
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: '密碼錯誤' });
+  }
+});
+
+app.post('/api/logout', authMiddleware, (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  activeSessions.delete(token);
+  saveSessions();
+  res.json({ ok: true });
+});
+
+app.put('/api/settings/password', authMiddleware, (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const settings = readJSON('settings.json');
+  if (oldPassword !== settings.adminPassword) {
+    return res.status(400).json({ error: '舊密碼錯誤' });
+  }
+  if (!newPassword || newPassword.length < 4) {
+    return res.status(400).json({ error: '新密碼太短' });
+  }
+  settings.adminPassword = newPassword;
+  writeJSON('settings.json', settings);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  NEWS
+// ═══════════════════════════════════════
+app.get('/api/news', (req, res) => {
+  res.json(readJSON('news.json'));
+});
+
+app.post('/api/news', authMiddleware, (req, res) => {
+  const { date, tag, text } = req.body;
+  if (!date || !text) return res.status(400).json({ error: '缺少必填欄位' });
+  const news = readJSON('news.json');
+  const item = { id: genId(), date, tag: tag || '公告', text };
+  news.unshift(item);
+  writeJSON('news.json', news);
+  res.json(item);
+});
+
+app.put('/api/news/:id', authMiddleware, (req, res) => {
+  const news = readJSON('news.json');
+  const idx = news.findIndex(n => n.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+  Object.assign(news[idx], req.body);
+  writeJSON('news.json', news);
+  res.json(news[idx]);
+});
+
+app.delete('/api/news/:id', authMiddleware, (req, res) => {
+  let news = readJSON('news.json');
+  news = news.filter(n => n.id !== req.params.id);
+  writeJSON('news.json', news);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  ARTISTS
+// ═══════════════════════════════════════
+app.get('/api/artists', (req, res) => {
+  res.json(readJSON('artists.json'));
+});
+
+app.post('/api/artists', authMiddleware, uploadArtist.single('photo'), (req, res) => {
+  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY } = req.body;
+  if (!name) return res.status(400).json({ error: '請輸入歌手名稱' });
+  const artists = readJSON('artists.json');
+  const item = {
+    id: genId(),
+    name,
+    genre: genre || '',
+    bio: bio || '',
+    photo: req.file ? `/uploads/artists/${req.file.filename}` : '',
+    photoFit: photoFit || 'cover',
+    photoPosY: parseInt(photoPosY) || 50,
+    links: { ig: ig || '', youtube: youtube || '', spotify: spotify || '' },
+    order: parseInt(order) || artists.length
+  };
+  // Auto-shift: if order conflicts, push others down
+  const newOrder = item.order;
+  artists.forEach(a => { if (a.order >= newOrder) a.order++; });
+  artists.push(item);
+  artists.sort((a, b) => a.order - b.order);
+  writeJSON('artists.json', artists);
+  res.json(item);
+});
+
+app.put('/api/artists/:id', authMiddleware, uploadArtist.single('photo'), (req, res) => {
+  const artists = readJSON('artists.json');
+  const idx = artists.findIndex(a => a.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+
+  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY } = req.body;
+  if (name) artists[idx].name = name;
+  if (genre !== undefined) artists[idx].genre = genre;
+  if (bio !== undefined) artists[idx].bio = bio;
+  if (order !== undefined) {
+    artists[idx].order = parseInt(order) || 0;
+  }
+  if (photoFit !== undefined) artists[idx].photoFit = photoFit;
+  if (photoPosY !== undefined) artists[idx].photoPosY = parseInt(photoPosY) || 50;
+  artists[idx].links = {
+    ig: ig !== undefined ? ig : artists[idx].links.ig,
+    youtube: youtube !== undefined ? youtube : artists[idx].links.youtube,
+    spotify: spotify !== undefined ? spotify : artists[idx].links.spotify
+  };
+
+  if (req.file) {
+    // Delete old photo
+    if (artists[idx].photo) {
+      const oldPath = path.join(__dirname, artists[idx].photo);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+    artists[idx].photo = `/uploads/artists/${req.file.filename}`;
+  }
+
+  artists.sort((a, b) => a.order - b.order);
+  writeJSON('artists.json', artists);
+  res.json(artists[idx]);
+});
+
+app.delete('/api/artists/:id', authMiddleware, (req, res) => {
+  let artists = readJSON('artists.json');
+  const artist = artists.find(a => a.id === req.params.id);
+  if (artist && artist.photo) {
+    const photoPath = path.join(__dirname, artist.photo);
+    if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath);
+  }
+  artists = artists.filter(a => a.id !== req.params.id);
+  writeJSON('artists.json', artists);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  SCHEDULE
+// ═══════════════════════════════════════
+app.get('/api/schedule', (req, res) => {
+  const dir = path.join(UPLOADS_DIR, 'schedule');
+  if (!fs.existsSync(dir)) return res.json({ images: [] });
+  const order = readJSON('schedule-order.json'); // [{filename, order}]
+  const files = fs.readdirSync(dir)
+    .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
+    .map(f => {
+      const o = order.find(x => x.filename === f);
+      return {
+        filename: f,
+        url: `/uploads/schedule/${f}`,
+        uploadedAt: fs.statSync(path.join(dir, f)).mtime,
+        order: o ? o.order : 999
+      };
+    })
+    .sort((a, b) => a.order - b.order);
+  res.json({ images: files });
+});
+
+app.post('/api/schedule', authMiddleware, uploadSchedule.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '請上傳圖片' });
+  // 加到排序最後
+  const order = readJSON('schedule-order.json');
+  const maxOrder = order.length ? Math.max(...order.map(x => x.order)) : -1;
+  order.push({ filename: req.file.filename, order: maxOrder + 1 });
+  writeJSON('schedule-order.json', order);
+  res.json({
+    filename: req.file.filename,
+    url: `/uploads/schedule/${req.file.filename}`
+  });
+});
+
+app.put('/api/schedule/reorder', authMiddleware, (req, res) => {
+  const { filenames } = req.body; // ['file1.png', 'file2.png', ...] 按新順序
+  if (!Array.isArray(filenames)) return res.status(400).json({ error: '格式錯誤' });
+  const order = filenames.map((f, i) => ({ filename: f, order: i }));
+  writeJSON('schedule-order.json', order);
+  res.json({ ok: true });
+});
+
+app.delete('/api/schedule/:filename', authMiddleware, (req, res) => {
+  const filePath = path.join(UPLOADS_DIR, 'schedule', req.params.filename);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  // 從排序中移除
+  let order = readJSON('schedule-order.json');
+  order = order.filter(x => x.filename !== req.params.filename);
+  writeJSON('schedule-order.json', order);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  GALLERY
+// ═══════════════════════════════════════
+app.get('/api/gallery', (req, res) => {
+  res.json(readJSON('gallery.json'));
+});
+
+app.post('/api/gallery', authMiddleware, uploadGallery.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '請上傳圖片' });
+  const gallery = readJSON('gallery.json');
+  const item = {
+    id: genId(),
+    caption: req.body.caption || '',
+    url: `/uploads/gallery/${req.file.filename}`,
+    order: parseInt(req.body.order) || gallery.length
+  };
+  gallery.push(item);
+  gallery.sort((a, b) => a.order - b.order);
+  writeJSON('gallery.json', gallery);
+  res.json(item);
+});
+
+app.put('/api/gallery/:id', authMiddleware, (req, res) => {
+  const gallery = readJSON('gallery.json');
+  const idx = gallery.findIndex(g => g.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+  if (req.body.caption !== undefined) gallery[idx].caption = req.body.caption;
+  if (req.body.order !== undefined) gallery[idx].order = parseInt(req.body.order) || 0;
+  gallery.sort((a, b) => a.order - b.order);
+  writeJSON('gallery.json', gallery);
+  res.json(gallery[idx]);
+});
+
+app.delete('/api/gallery/:id', authMiddleware, (req, res) => {
+  let gallery = readJSON('gallery.json');
+  const item = gallery.find(g => g.id === req.params.id);
+  if (item) {
+    const photoPath = path.join(__dirname, item.url);
+    if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath);
+  }
+  gallery = gallery.filter(g => g.id !== req.params.id);
+  writeJSON('gallery.json', gallery);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  TICKETS
+// ═══════════════════════════════════════
+const uploadTicketPoster = multer({
+  storage: makeStorage('tickets'),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|webp)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  }
+});
+
+app.get('/api/tickets', (req, res) => {
+  const tickets = readJSON('tickets.json');
+  const orders = readJSON('ticket-orders.json');
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const isAdmin = token && activeSessions.has(token);
+  // Calculate remaining for each ticket
+  const ticketsWithRemaining = tickets.map(t => {
+    const totalTickets = t.totalTickets || 0;
+    let remaining;
+    if (t.manualRemaining !== null && t.manualRemaining !== undefined) {
+      remaining = t.manualRemaining;
+    } else {
+      const soldQty = orders.filter(o => o.ticketId === t.id && o.status !== 'cancelled').reduce((sum, o) => sum + (o.quantity || 0), 0);
+      remaining = Math.max(0, totalTickets - soldQty);
+    }
+    return { ...t, remaining, soldOut: totalTickets > 0 && remaining <= 0 };
+  });
+  if (isAdmin) return res.json(ticketsWithRemaining);
+  // Public: only on_sale and upcoming
+  const now = new Date().toISOString().split('T')[0];
+  res.json(ticketsWithRemaining.filter(t => t.date >= now));
+});
+
+app.post('/api/tickets', authMiddleware, uploadTicketPoster.single('poster'), (req, res) => {
+  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline } = req.body;
+  if (!title || !date) return res.status(400).json({ error: '請填寫演出名稱和日期' });
+  const tickets = readJSON('tickets.json');
+  const item = {
+    id: genId(),
+    title, date, time: time || '',
+    artist: artist || '',
+    price: parseInt(price) || 0,
+    description: description || '',
+    venue: '樂放音樂展演空間',
+    poster: req.file ? `/uploads/tickets/${req.file.filename}` : '',
+    totalTickets: parseInt(totalTickets) || 0,
+    manualRemaining: manualRemaining !== '' && manualRemaining !== undefined ? parseInt(manualRemaining) : null,
+    paymentDeadline: paymentDeadline || '',
+    status: 'on_sale',
+    createdAt: new Date().toISOString()
+  };
+  tickets.push(item);
+  tickets.sort((a, b) => a.date.localeCompare(b.date));
+  writeJSON('tickets.json', tickets);
+  res.json(item);
+});
+
+app.put('/api/tickets/:id', authMiddleware, uploadTicketPoster.single('poster'), (req, res) => {
+  const tickets = readJSON('tickets.json');
+  const idx = tickets.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline, status } = req.body;
+  if (title !== undefined) tickets[idx].title = title;
+  if (date !== undefined) tickets[idx].date = date;
+  if (time !== undefined) tickets[idx].time = time;
+  if (price !== undefined) tickets[idx].price = parseInt(price) || 0;
+  if (description !== undefined) tickets[idx].description = description;
+  if (artist !== undefined) tickets[idx].artist = artist;
+  if (totalTickets !== undefined) tickets[idx].totalTickets = parseInt(totalTickets) || 0;
+  if (manualRemaining !== undefined) tickets[idx].manualRemaining = manualRemaining !== '' ? parseInt(manualRemaining) : null;
+  if (paymentDeadline !== undefined) tickets[idx].paymentDeadline = paymentDeadline;
+  if (status !== undefined) tickets[idx].status = status;
+  if (req.file) {
+    if (tickets[idx].poster) {
+      const oldPath = path.join(__dirname, tickets[idx].poster);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+    tickets[idx].poster = `/uploads/tickets/${req.file.filename}`;
+  }
+  tickets.sort((a, b) => a.date.localeCompare(b.date));
+  writeJSON('tickets.json', tickets);
+  res.json(tickets[idx]);
+});
+
+app.delete('/api/tickets/:id', authMiddleware, (req, res) => {
+  let tickets = readJSON('tickets.json');
+  const ticket = tickets.find(t => t.id === req.params.id);
+  if (ticket && ticket.poster) {
+    const p = path.join(__dirname, ticket.poster);
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+  tickets = tickets.filter(t => t.id !== req.params.id);
+  writeJSON('tickets.json', tickets);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  TICKET ORDERS
+// ═══════════════════════════════════════
+
+// Public: create order
+app.post('/api/ticket-orders', async (req, res) => {
+  const { name, phone, email, ticketId, quantity, bankLast5, hasPaid } = req.body;
+  if (!name || !phone || !ticketId || !quantity || !bankLast5) {
+    return res.status(400).json({ error: '請填寫所有必填欄位' });
+  }
+  const tickets = readJSON('tickets.json');
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket) return res.status(404).json({ error: '找不到該演出' });
+
+  // Check remaining
+  const orders = readJSON('ticket-orders.json');
+  const soldQty = orders.filter(o => o.ticketId === ticketId && o.status !== 'cancelled').reduce((sum, o) => sum + (o.quantity || 0), 0);
+  const totalTickets = ticket.totalTickets || 0;
+  const remaining = totalTickets > 0 ? totalTickets - soldQty : 999;
+  if (remaining < quantity) {
+    return res.status(400).json({ error: `票數不足，目前剩餘 ${remaining} 張` });
+  }
+
+  const order = {
+    id: genId(),
+    ticketId,
+    ticketTitle: ticket.title,
+    name,
+    phone,
+    email: email || '',
+    quantity: parseInt(quantity) || 1,
+    bankLast5,
+    hasPaid: hasPaid === true || hasPaid === 'true',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  orders.push(order);
+  writeJSON('ticket-orders.json', orders);
+
+  // Send email notification to owner with confirm button
+  try {
+    const transporter = createTransporter();
+    if (transporter) {
+      const smtp = getEmailSettings();
+      const confirmToken = genConfirmToken(order.id);
+      const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
+      const artistText = ticket.artist ? `${ticket.artist} - ` : '';
+      await transporter.sendMail({
+        from: `"樂放購票系統" <${smtp.user}>`,
+        to: OWNER_EMAIL,
+        subject: `【新購票通知】${order.name} - ${artistText}${ticket.title} (${order.quantity}張)`,
+        html: `
+          <div style="font-family:sans-serif;max-width:500px;padding:20px">
+            <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新購票通知</h2>
+            <table style="font-size:14px;line-height:2">
+              <tr><td style="color:#888;padding-right:16px">演出場次</td><td><strong>${artistText}${ticket.title}</strong></td></tr>
+              <tr><td style="color:#888">演出日期</td><td>${ticket.date} ${ticket.time}</td></tr>
+              <tr><td style="color:#888">姓名</td><td>${order.name}</td></tr>
+              <tr><td style="color:#888">電話</td><td>${order.phone}</td></tr>
+              <tr><td style="color:#888">Email</td><td>${order.email}</td></tr>
+              <tr><td style="color:#888">票數</td><td>${order.quantity} 張</td></tr>
+              <tr><td style="color:#888">帳號末五碼</td><td>${order.bankLast5}</td></tr>
+              <tr><td style="color:#888">已匯款</td><td>${order.hasPaid ? '是' : '否'}</td></tr>
+            </table>
+            <div style="margin-top:24px;text-align:center">
+              <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
+            </div>
+            <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
+            <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+          </div>
+        `
+      });
+      console.log('已寄送購票通知信給老闆娘');
+    } else {
+      console.log('SMTP 未設定，跳過寄信。購票資料:', order.name, ticket.title);
+    }
+  } catch (e) {
+    console.error('寄送購票通知信失敗:', e.message);
+  }
+
+  res.json(order);
+});
+
+// Admin: get all orders
+app.get('/api/ticket-orders', authMiddleware, (req, res) => {
+  const orders = readJSON('ticket-orders.json');
+  res.json(orders);
+});
+
+// Admin: get orders for specific show
+app.get('/api/ticket-orders/:ticketId', authMiddleware, (req, res) => {
+  const orders = readJSON('ticket-orders.json');
+  res.json(orders.filter(o => o.ticketId === req.params.ticketId));
+});
+
+// Admin: update order (mark paid/confirmed)
+app.patch('/api/ticket-orders/:id', authMiddleware, (req, res) => {
+  const orders = readJSON('ticket-orders.json');
+  const idx = orders.findIndex(o => o.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到訂單' });
+  const { hasPaid, status } = req.body;
+  if (hasPaid !== undefined) orders[idx].hasPaid = hasPaid === true || hasPaid === 'true';
+  if (status !== undefined) orders[idx].status = status;
+  writeJSON('ticket-orders.json', orders);
+  res.json(orders[idx]);
+});
+
+// Confirm ticket order (from owner email link)
+app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
+  const expectedToken = genConfirmToken(req.params.id);
+  if (req.query.token !== expectedToken) return res.status(403).send('無效的確認連結');
+  const orders = readJSON('ticket-orders.json');
+  const idx = orders.findIndex(o => o.id === req.params.id);
+  if (idx === -1) return res.status(404).send('找不到此訂單');
+  if (orders[idx].status === 'confirmed') return res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>此購票已確認過囉！</h2><p>確認信已寄出給客人。</p></body></html>');
+  orders[idx].status = 'confirmed';
+  orders[idx].hasPaid = true;
+  writeJSON('ticket-orders.json', orders);
+  // Send confirmation email to buyer
+  try {
+    const transporter = createTransporter();
+    if (transporter && orders[idx].email) {
+      const smtp = getEmailSettings();
+      const tickets = readJSON('tickets.json');
+      const ticket = tickets.find(t => t.id === orders[idx].ticketId);
+      const artistText = ticket?.artist ? `${ticket.artist} - ` : '';
+      const showTitle = ticket ? `${artistText}${ticket.title}` : orders[idx].ticketTitle;
+      const showDate = ticket ? `${ticket.date} ${ticket.time}` : '';
+      await transporter.sendMail({
+        from: `"樂放音樂展演空間" <${smtp.user}>`,
+        to: orders[idx].email,
+        subject: `【樂放音樂展演空間】購票確認 - ${showTitle}`,
+        html: `
+          <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
+            <div style="text-align:center;margin-bottom:24px">
+              <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
+              <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
+              <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 購票已確認</h2>
+              <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
+                ${orders[idx].name} 您好，<br>
+                您的購票已確認成功！演出當日請出示此確認信入場。
+              </p>
+              <table style="width:100%;border-collapse:collapse;font-size:14px">
+                <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">演出</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showTitle}</td></tr>
+                <tr><td style="padding:8px 0;color:#6a7a8a">日期時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showDate}</td></tr>
+                <tr><td style="padding:8px 0;color:#6a7a8a">票數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].quantity} 張</td></tr>
+                <tr><td style="padding:8px 0;color:#6a7a8a">姓名</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].name}</td></tr>
+              </table>
+              <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
+              <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
+                📍 新北市淡水區中正路22巷1之1號（老街台電正對面）<br>
+                📞 0931-223-353（王蝴蝶）
+              </p>
+            </div>
+            <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+          </div>
+        `
+      });
+      console.log('已寄送購票確認信給客人:', orders[idx].email);
+    }
+  } catch (e) {
+    console.error('寄送購票確認信失敗:', e.message);
+  }
+  res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2 style="color:#4a8a5a">✅ 購票已確認！</h2><p>已寄送確認信給 ' + orders[idx].email + '</p></body></html>');
+});
+
+// Admin: delete order
+app.delete('/api/ticket-orders/:id', authMiddleware, (req, res) => {
+  let orders = readJSON('ticket-orders.json');
+  orders = orders.filter(o => o.id !== req.params.id);
+  writeJSON('ticket-orders.json', orders);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  MENU (legacy text-based - kept for compatibility)
+// ═══════════════════════════════════════
+app.get('/api/menu', (req, res) => {
+  res.json(readJSON('menu.json'));
+});
+
+app.put('/api/menu', authMiddleware, (req, res) => {
+  writeJSON('menu.json', req.body);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  MENU IMAGES
+// ═══════════════════════════════════════
+const uploadMenu = multer({
+  storage: makeStorage('menu'),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /\.(png|jpg|jpeg|webp)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  }
+});
+
+app.get('/api/menu-images', (req, res) => {
+  const images = readJSON('menu-images.json');
+  res.json(images);
+});
+
+app.post('/api/menu-images', authMiddleware, uploadMenu.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '請上傳圖片' });
+  const images = readJSON('menu-images.json');
+  const item = {
+    id: genId(),
+    filename: req.file.filename,
+    url: `/uploads/menu/${req.file.filename}`,
+    caption: req.body.caption || '',
+    order: parseInt(req.body.order) || images.length
+  };
+  images.push(item);
+  images.sort((a, b) => a.order - b.order);
+  writeJSON('menu-images.json', images);
+  res.json(item);
+});
+
+app.delete('/api/menu-images/:id', authMiddleware, (req, res) => {
+  let images = readJSON('menu-images.json');
+  const item = images.find(i => i.id === req.params.id);
+  if (item) {
+    const filePath = path.join(UPLOADS_DIR, 'menu', item.filename);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  }
+  images = images.filter(i => i.id !== req.params.id);
+  writeJSON('menu-images.json', images);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  RESERVATIONS
+// ═══════════════════════════════════════
+app.get('/api/reservations', (req, res) => {
+  // Public: only future; Admin (with auth): all
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const isAdmin = token && activeSessions.has(token);
+  let list = readJSON('reservations.json');
+  if (!isAdmin) {
+    const today = new Date().toISOString().split('T')[0];
+    list = list.filter(r => r.date >= today && r.status !== 'cancelled');
+  }
+  list.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  res.json(list);
+});
+
+app.post('/api/reservations', async (req, res) => {
+  const { name, phone, email, date, time, guests, note } = req.body;
+  if (!name || !phone || !date || !time || !guests) {
+    return res.status(400).json({ error: '缺少必填欄位' });
+  }
+  const list = readJSON('reservations.json');
+  const item = {
+    id: genId(),
+    name, phone, email: email || '', date, time, guests, note: note || '',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  list.push(item);
+  writeJSON('reservations.json', list);
+  res.json(item);
+
+  // 非同步寄信（不阻塞回應）
+  sendReservationEmails(item).catch(e => console.error('寄信錯誤:', e));
+});
+
+// 老闆娘從 Email 點「確認訂位」按鈕
+app.get('/api/reservations/:id/confirm', async (req, res) => {
+  const token = req.query.token;
+  const expectedToken = genConfirmToken(req.params.id);
+  if (token !== expectedToken) {
+    return res.status(403).send('<h2>連結無效或已過期</h2>');
+  }
+  const list = readJSON('reservations.json');
+  const idx = list.findIndex(r => r.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).send('<h2>找不到此訂位</h2>');
+  }
+  if (list[idx].status === 'confirmed') {
+    return res.send(`
+      <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px">
+        <h1 style="color:#c4a55a;font-size:48px;margin:0">✅</h1>
+        <h2 style="color:#1e2d3d">此訂位已確認過囉</h2>
+        <p style="color:#888">${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)</p>
+      </div>
+    `);
+  }
+  list[idx].status = 'confirmed';
+  writeJSON('reservations.json', list);
+
+  // 如果客人有留 Email，自動寄確認信
+  if (list[idx].email) {
+    sendConfirmedEmail(list[idx]).catch(e => console.error('寄確認信錯誤:', e));
+  }
+
+  res.send(`
+    <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px">
+      <h1 style="color:#4a8a5a;font-size:48px;margin:0">✅</h1>
+      <h2 style="color:#1e2d3d">訂位已確認成功！</h2>
+      <p style="color:#888;font-size:15px;line-height:1.8">
+        ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)<br>
+        ${list[idx].email ? '已自動寄送確認信給客人 (' + list[idx].email + ')' : '客人未提供 Email，不會寄送確認信'}
+      </p>
+      <p style="margin-top:24px"><a href="/admin#reservations" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
+    </div>
+  `);
+});
+
+app.patch('/api/reservations/:id', authMiddleware, async (req, res) => {
+  const list = readJSON('reservations.json');
+  const idx = list.findIndex(r => r.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+  const oldStatus = list[idx].status;
+  if (req.body.status) list[idx].status = req.body.status;
+  writeJSON('reservations.json', list);
+  res.json(list[idx]);
+
+  // 確認訂位時，寄信通知客人
+  if (req.body.status === 'confirmed' && oldStatus !== 'confirmed' && list[idx].email) {
+    sendConfirmedEmail(list[idx]).catch(e => console.error('寄確認信錯誤:', e));
+  }
+});
+
+app.delete('/api/reservations/:id', authMiddleware, (req, res) => {
+  let list = readJSON('reservations.json');
+  list = list.filter(r => r.id !== req.params.id);
+  writeJSON('reservations.json', list);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  SMTP Settings
+// ═══════════════════════════════════════
+app.get('/api/smtp-settings', authMiddleware, (req, res) => {
+  const settings = readJSON('settings.json');
+  const smtp = settings.smtp || { host: '', port: 587, secure: false, user: '', pass: '' };
+  // 不回傳密碼明文
+  res.json({ ...smtp, pass: smtp.pass ? '••••••••' : '' });
+});
+
+app.post('/api/smtp-settings', authMiddleware, (req, res) => {
+  const { host, port, secure, user, pass } = req.body;
+  const settings = readJSON('settings.json');
+  const existing = settings.smtp || {};
+  settings.smtp = {
+    host: host || existing.host || '',
+    port: parseInt(port) || 587,
+    secure: !!secure,
+    user: user || existing.user || '',
+    pass: (pass && pass !== '••••••••') ? pass : (existing.pass || '')
+  };
+  writeJSON('settings.json', settings);
+  res.json({ ok: true, message: 'SMTP 設定已儲存' });
+});
+
+app.post('/api/smtp-test', authMiddleware, async (req, res) => {
+  const transporter = createTransporter();
+  if (!transporter) return res.status(400).json({ error: 'SMTP 尚未設定' });
+  try {
+    await transporter.verify();
+    // 寄一封測試信
+    const smtp = getEmailSettings();
+    await transporter.sendMail({
+      from: `"樂放訂位系統" <${smtp.user}>`,
+      to: OWNER_EMAIL,
+      subject: '【測試】SMTP 設定成功',
+      html: '<p>恭喜！SMTP 郵件設定成功，訂位系統會自動寄送通知到此信箱。</p>'
+    });
+    res.json({ ok: true, message: '測試信已寄出，請檢查信箱' });
+  } catch (e) {
+    res.status(400).json({ error: 'SMTP 連線失敗: ' + e.message });
+  }
+});
+
+// ─── SPA fallback ───
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ─── Start ───
+app.listen(PORT, () => {
+  console.log(`🎵 樂放音樂展演空間 running at http://localhost:${PORT}`);
+  console.log(`   Admin panel: http://localhost:${PORT}/admin`);
+});

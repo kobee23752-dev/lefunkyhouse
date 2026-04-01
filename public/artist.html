@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌手介紹 - 樂放音樂展演空間</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans TC',sans-serif;background:#f6f4ef;color:#1e2d3d;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+        .back-link{align-self:flex-start;max-width:600px;width:100%;margin:0 auto 16px;font-size:.9rem;color:#6a7a8a;text-decoration:none}
+        .back-link:hover{color:#1e2d3d}
+        .artist-page{max-width:600px;width:100%;background:#fff;border-radius:12px;border:1px solid #e4dfd4;overflow:hidden}
+        .artist-photo{width:100%;max-height:420px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f2efe8}
+        .artist-photo img{width:100%;height:auto;max-height:420px;object-fit:cover}
+        .artist-body{padding:28px}
+        .artist-name{font-size:1.4rem;font-weight:700;margin-bottom:6px}
+        .artist-genre{font-size:.9rem;color:#8a7440;margin-bottom:16px}
+        .artist-bio{font-size:.95rem;color:#1e2d3d;line-height:2;list-style:none;padding:0}
+        .artist-bio li{padding:4px 0;padding-left:1.4em;position:relative}
+        .artist-bio li::before{content:'•';position:absolute;left:0;color:#c4a55a}
+        .artist-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+        .artist-links a{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid #e4dfd4;border-radius:8px;color:#6a7a8a;font-size:.85rem;text-decoration:none;transition:all .2s}
+        .artist-links a:hover{border-color:#c4a55a;color:#8a7440}
+        .loading{text-align:center;padding:60px;color:#6a7a8a}
+        @media(max-width:500px){
+            body{padding:10px}
+            .artist-body{padding:20px}
+        }
+    </style>
+</head>
+<body>
+
+<a href="/#artists" class="back-link">&larr; 返回歌手列表</a>
+
+<div class="artist-page" id="artistPage">
+    <div class="loading">載入中...</div>
+</div>
+
+<script>
+const artistId = new URLSearchParams(location.search).get('id');
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function parseBioLines(bio) {
+    if (!bio) return [];
+    let lines = bio.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) return lines;
+    lines = bio.split(/(?=\d{4}年)/).map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) return lines;
+    if (bio.length > 60) {
+        lines = bio.split(/\s{2,}/).map(l => l.trim()).filter(Boolean);
+        if (lines.length > 1) return lines;
+    }
+    return [bio.trim()];
+}
+
+async function init() {
+    if (!artistId) { document.querySelector('.loading').textContent = '找不到歌手資訊'; return; }
+    try {
+        const artists = await (await fetch('/api/artists')).json();
+        const a = artists.find(x => x.id === artistId);
+        if (!a) { document.querySelector('.loading').textContent = '找不到此歌手'; return; }
+
+        const posY = a.photoPosY ?? 50;
+        const lines = parseBioLines(a.bio || '');
+        const bioHtml = lines.length > 0
+            ? '<ul class="artist-bio">' + lines.map(l => `<li>${esc(l)}</li>`).join('') + '</ul>'
+            : '';
+
+        let linksHtml = '';
+        if (a.links && a.links.length > 0) {
+            linksHtml = '<div class="artist-links">' + a.links.map(lnk =>
+                `<a href="${esc(lnk.url)}" target="_blank" rel="noopener">${esc(lnk.label || lnk.url)}</a>`
+            ).join('') + '</div>';
+        }
+
+        document.title = `${a.name} - 樂放音樂展演空間`;
+
+        document.getElementById('artistPage').innerHTML = `
+            ${a.photo ? `<div class="artist-photo"><img src="${esc(a.photo)}" alt="${esc(a.name)}" style="object-position:center ${posY}%"></div>` : ''}
+            <div class="artist-body">
+                <div class="artist-name">${esc(a.name)}</div>
+                ${a.genre ? `<div class="artist-genre">${esc(a.genre)}</div>` : ''}
+                ${bioHtml}
+                ${linksHtml}
+            </div>`;
+    } catch(e) {
+        document.querySelector('.loading').textContent = '載入失敗，請重新整理';
+    }
+}
+
+init();
+</script>
+</body>
+</html>

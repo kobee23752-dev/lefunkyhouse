@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>後台管理 - 樂放音樂展演空間</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1e2444;
+            --navy-light: #2d3461;
+            --navy-dark: #151a35;
+            --gold: #d5bc7e;
+            --gold-dark: #b89c5a;
+            --sage: #91b5ad;
+            --white: #ffffff;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #868e96;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --red: #e74c3c;
+            --green: #27ae60;
+            --blue: #3498db;
+            --radius: 8px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--gray-100); color:var(--gray-800); min-height:100vh; font-size:14px; }
+
+        /* ─── Login ─── */
+        .login-page { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--navy); }
+        .login-box { background:var(--white); border-radius:12px; padding:48px 40px; width:380px; max-width:90vw; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+        .login-box h1 { font-size:1.3rem; color:var(--navy); margin-bottom:6px; }
+        .login-box .sub { font-size:.85rem; color:var(--gray-600); margin-bottom:32px; }
+        .login-box input { width:100%; padding:12px 16px; border:1px solid var(--gray-300); border-radius:var(--radius); font-size:.9rem; margin-bottom:16px; outline:none; font-family:inherit; }
+        .login-box input:focus { border-color:var(--navy); box-shadow:0 0 0 3px rgba(30,36,68,.1); }
+        .login-box button { width:100%; padding:12px; background:var(--navy); color:var(--white); border:none; border-radius:var(--radius); font-size:.9rem; font-weight:500; cursor:pointer; transition:background .2s; font-family:inherit; }
+        .login-box button:hover { background:var(--navy-light); }
+        .login-error { color:var(--red); font-size:.85rem; margin-bottom:12px; display:none; }
+
+        /* ─── Layout ─── */
+        .app { display:none; min-height:100vh; }
+        .app.show { display:flex; }
+
+        /* Sidebar */
+        .sidebar { width:220px; background:var(--navy); color:var(--white); padding:20px 0; flex-shrink:0; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; z-index:50; }
+        .sidebar-brand { padding:8px 20px 24px; font-size:1rem; font-weight:700; letter-spacing:.05em; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:12px; }
+        .sidebar-brand small { display:block; font-size:.7rem; font-weight:300; color:var(--gold); margin-top:4px; letter-spacing:.1em; }
+        .sidebar a { display:flex; align-items:center; gap:10px; padding:11px 20px; color:rgba(255,255,255,.7); text-decoration:none; font-size:.85rem; transition:all .2s; border-left:3px solid transparent; }
+        .sidebar a:hover { color:var(--white); background:rgba(255,255,255,.05); }
+        .sidebar a.active { color:var(--gold); background:rgba(255,255,255,.08); border-left-color:var(--gold); }
+        .sidebar-bottom { position:absolute; bottom:0; left:0; right:0; padding:16px 20px; border-top:1px solid rgba(255,255,255,.1); }
+        .sidebar-bottom a { padding:8px 0; font-size:.8rem; }
+
+        /* Content */
+        .content { margin-left:220px; flex:1; padding:28px 32px; min-height:100vh; }
+        .page-title { font-size:1.4rem; font-weight:700; color:var(--navy); margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; }
+
+        /* Panel */
+        .panel { display:none; }
+        .panel.active { display:block; }
+
+        /* Cards */
+        .card { background:var(--white); border-radius:var(--radius); padding:24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+        .card h3 { font-size:1rem; color:var(--navy); margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--gray-200); }
+
+        /* Stats */
+        .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+        .stat { background:var(--white); border-radius:var(--radius); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+        .stat .num { font-size:2rem; font-weight:700; color:var(--navy); }
+        .stat .lbl { font-size:.8rem; color:var(--gray-600); margin-top:4px; }
+
+        /* Forms */
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-size:.8rem; font-weight:500; color:var(--gray-700); margin-bottom:6px; }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .input, .textarea, .select { width:100%; padding:10px 12px; border:1px solid var(--gray-300); border-radius:6px; font-size:.88rem; font-family:inherit; outline:none; background:var(--white); }
+        .input:focus, .textarea:focus, .select:focus { border-color:var(--navy); box-shadow:0 0 0 3px rgba(30,36,68,.08); }
+        .textarea { resize:vertical; min-height:80px; }
+        .select { cursor:pointer; }
+
+        /* Buttons */
+        .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border:none; border-radius:6px; font-size:.85rem; font-family:inherit; cursor:pointer; transition:all .2s; font-weight:500; }
+        .btn-primary { background:var(--navy); color:var(--white); }
+        .btn-primary:hover { background:var(--navy-light); }
+        .btn-gold { background:var(--gold); color:var(--navy); }
+        .btn-gold:hover { background:var(--gold-dark); }
+        .btn-danger { background:var(--red); color:var(--white); }
+        .btn-danger:hover { opacity:.85; }
+        .btn-outline { background:transparent; border:1px solid var(--gray-300); color:var(--gray-700); }
+        .btn-outline:hover { border-color:var(--gray-400); background:var(--gray-50); }
+        .btn-sm { padding:6px 12px; font-size:.78rem; }
+        .btn-group { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+
+        /* Table */
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:.85rem; }
+        thead { background:var(--gray-50); }
+        th { padding:10px 12px; text-align:left; font-weight:500; color:var(--gray-600); font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; }
+        td { padding:12px; border-bottom:1px solid var(--gray-200); color:var(--gray-700); }
+        tr:hover td { background:var(--gray-50); }
+
+        /* Status badges */
+        .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:500; }
+        .badge-pending { background:#fff3cd; color:#856404; }
+        .badge-confirmed { background:#d4edda; color:#155724; }
+        .badge-cancelled { background:#f8d7da; color:#721c24; }
+
+        /* Image upload */
+        .upload-zone { border:2px dashed var(--gray-300); border-radius:var(--radius); padding:40px 20px; text-align:center; color:var(--gray-500); cursor:pointer; transition:all .2s; position:relative; }
+        .upload-zone:hover { border-color:var(--navy); color:var(--navy); }
+        .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+        .upload-zone .icon { font-size:2rem; margin-bottom:8px; }
+
+        /* Image preview grid */
+        .img-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-top:16px; }
+        .img-card { position:relative; border-radius:var(--radius); overflow:hidden; border:1px solid var(--gray-200); }
+        .img-card img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
+        .img-card .img-overlay { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.6); padding:8px; display:flex; justify-content:space-between; align-items:center; }
+        .img-card .img-caption { color:#fff; font-size:.75rem; }
+        .img-card .img-del { background:var(--red); color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:.7rem; cursor:pointer; }
+
+        /* Schedule image preview */
+        .schedule-preview { margin-top:16px; }
+        .schedule-preview img { max-width:100%; border-radius:var(--radius); border:1px solid var(--gray-200); margin-bottom:12px; }
+
+        /* Menu editor */
+        .menu-cat-tabs { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+        .menu-cat-tab { padding:8px 16px; border:1px solid var(--gray-300); border-radius:6px; background:var(--white); cursor:pointer; font-size:.82rem; font-family:inherit; transition:all .2s; }
+        .menu-cat-tab.active { background:var(--navy); color:var(--white); border-color:var(--navy); }
+        .menu-section { margin-bottom:24px; }
+        .menu-section-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+        .menu-section-hdr input { font-size:1rem; font-weight:600; border:none; border-bottom:1px solid var(--gray-200); padding:4px 0; outline:none; flex:1; font-family:inherit; }
+        .menu-section-hdr input:focus { border-color:var(--navy); }
+        .menu-item-row { display:grid; grid-template-columns:1fr 120px auto; gap:8px; margin-bottom:8px; align-items:start; }
+        .menu-item-row .item-fields { display:flex; flex-direction:column; gap:4px; }
+
+        /* Artist editor */
+        .artist-form-grid { display:grid; grid-template-columns:200px 1fr; gap:20px; }
+        .artist-photo-upload { width:200px; aspect-ratio:1/1; border:2px dashed var(--gray-300); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; cursor:pointer; }
+        .artist-photo-upload img { width:100%; height:100%; object-fit:cover; position:absolute; }
+        .artist-photo-upload input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+        /* Modal */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal { background:var(--white); border-radius:12px; padding:28px; width:560px; max-width:90vw; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+        .modal h3 { font-size:1.1rem; color:var(--navy); margin-bottom:20px; }
+        .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:24px; }
+
+        /* Toast */
+        .toast { position:fixed; bottom:24px; right:24px; background:var(--navy); color:var(--white); padding:12px 24px; border-radius:var(--radius); font-size:.88rem; z-index:1000; opacity:0; transform:translateY(20px); transition:all .3s; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+        .toast.show { opacity:1; transform:translateY(0); }
+        .toast.error { background:var(--red); }
+        .toast.success { background:var(--green); }
+
+        @media(max-width:768px) {
+            .sidebar { width:100%; position:relative; bottom:auto; display:flex; overflow-x:auto; padding:0; }
+            .sidebar-brand { display:none; }
+            .sidebar-bottom { display:none; }
+            .sidebar a { white-space:nowrap; padding:14px 16px; border-left:none; border-bottom:3px solid transparent; font-size:.78rem; }
+            .sidebar a.active { border-bottom-color:var(--gold); border-left-color:transparent; }
+            .app.show { flex-direction:column; }
+            .content { margin-left:0; padding:20px 16px; }
+            .form-row { grid-template-columns:1fr; }
+            .artist-form-grid { grid-template-columns:1fr; }
+            .menu-item-row { grid-template-columns:1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ Login ═══ -->
+<div class="login-page" id="loginPage">
+    <div class="login-box">
+        <h1>樂放音樂展演空間</h1>
+        <p class="sub">後台管理系統</p>
+        <div class="login-error" id="loginError">密碼錯誤，請重試</div>
+        <form onsubmit="return handleLogin(event)">
+            <input type="password" id="loginPwd" placeholder="請輸入管理員密碼" autofocus>
+            <button type="submit">登入</button>
+        </form>
+    </div>
+</div>
+
+<!-- ═══ App ═══ -->
+<div class="app" id="app">
+    <nav class="sidebar">
+        <div class="sidebar-brand">
+            樂放後台
+            <small>Admin Panel</small>
+        </div>
+        <a href="#" class="active" data-panel="dashboard">&#128202; 儀表板</a>
+        <a href="#" data-panel="schedule">&#128197; 節目表</a>
+        <a href="#" data-panel="news">&#128227; 最新消息</a>
+        <a href="#" data-panel="artists">&#127908; 歌手管理</a>
+        <a href="#" data-panel="gallery">&#128247; 場地照片</a>
+        <a href="#" data-panel="menuEdit">&#127869; 菜單管理</a>
+        <a href="#" data-panel="tickets">&#127915; 售票管理</a>
+        <a href="#" data-panel="reservations">&#128221; 訂位管理</a>
+        <div class="sidebar-bottom">
+            <a href="#" data-panel="settings">&#9881; 設定</a>
+            <a href="#" onclick="logout()">&#128682; 登出</a>
+        </div>
+    </nav>
+
+    <div class="content">
+
+        <!-- Dashboard -->
+        <div class="panel active" id="panelDashboard">
+            <div class="page-title">儀表板</div>
+            <div class="stats" id="dashStats"></div>
+            <div class="card">
+                <h3>今日訂位</h3>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>姓名</th><th>電話</th><th>時間</th><th>人數</th><th>狀態</th></tr></thead>
+                    <tbody id="dashReservations"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- Schedule -->
+        <div class="panel" id="panelSchedule">
+            <div class="page-title">節目表管理 <span style="font-size:.8rem;font-weight:300;color:var(--gray-600)">上傳每月節目表圖片</span></div>
+            <div class="card">
+                <h3>上傳新節目表</h3>
+                <div class="upload-zone" id="scheduleUpload">
+                    <div class="icon">&#128197;</div>
+                    <div>點擊或拖曳上傳節目表圖片（PNG / JPG）</div>
+                    <input type="file" accept="image/*" onchange="uploadSchedule(this.files[0])">
+                </div>
+            </div>
+            <div class="card">
+                <h3>目前節目表</h3>
+                <div id="scheduleList"></div>
+            </div>
+        </div>
+
+        <!-- News -->
+        <div class="panel" id="panelNews">
+            <div class="page-title">最新消息 <button class="btn btn-primary btn-sm" onclick="openNewsModal()">+ 新增消息</button></div>
+            <div class="card">
+                <div class="table-wrap"><table>
+                    <thead><tr><th>日期</th><th>標籤</th><th>內容</th><th>操作</th></tr></thead>
+                    <tbody id="newsList"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- Artists -->
+        <div class="panel" id="panelArtists">
+            <div class="page-title">歌手管理 <button class="btn btn-primary btn-sm" onclick="openArtistModal()">+ 新增歌手</button></div>
+            <div id="artistsList"></div>
+        </div>
+
+        <!-- Gallery -->
+        <div class="panel" id="panelGallery">
+            <div class="page-title">場地照片</div>
+            <div class="card">
+                <h3>上傳照片</h3>
+                <div class="upload-zone">
+                    <div class="icon">&#128247;</div>
+                    <div>點擊或拖曳上傳場地照片</div>
+                    <input type="file" accept="image/*" onchange="uploadGalleryPhoto(this.files[0])">
+                </div>
+            </div>
+            <div class="card">
+                <h3>照片列表</h3>
+                <div class="img-grid" id="galleryList"></div>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <div class="panel" id="panelMenuEdit">
+            <div class="page-title">菜單管理</div>
+            <div class="card">
+                <h3>上傳菜單照片</h3>
+                <div class="upload-zone">
+                    <div class="icon">&#128247;</div>
+                    <div>點擊或拖曳上傳菜單照片</div>
+                    <input type="file" accept="image/*" onchange="uploadMenuPhoto(this.files[0])">
+                </div>
+            </div>
+            <div class="card">
+                <h3>菜單照片列表</h3>
+                <div class="img-grid" id="menuImagesList"></div>
+            </div>
+        </div>
+
+        <!-- Tickets -->
+        <div class="panel" id="panelTickets">
+            <div class="page-title">售票管理 <button class="btn btn-primary btn-sm" onclick="openTicketModal()">+ 新增售票演出</button></div>
+            <div id="ticketsList"></div>
+        </div>
+
+        <!-- Reservations -->
+        <div class="panel" id="panelReservations">
+            <div class="page-title">訂位管理</div>
+            <div class="card">
+                <div class="table-wrap"><table>
+                    <thead><tr><th>日期</th><th>時間</th><th>姓名</th><th>電話</th><th>Email</th><th>人數</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead>
+                    <tbody id="resList"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="panel" id="panelSettings">
+            <div class="page-title">設定</div>
+            <div class="card" style="max-width:500px">
+                <h3>變更管理員密碼</h3>
+                <form onsubmit="return changePassword(event)">
+                    <div class="form-group"><label>目前密碼</label><input class="input" type="password" id="oldPwd" required></div>
+                    <div class="form-group"><label>新密碼</label><input class="input" type="password" id="newPwd" required minlength="4"></div>
+                    <button class="btn btn-primary" type="submit">更新密碼</button>
+                </form>
+            </div>
+            <div class="card" style="max-width:500px;margin-top:20px">
+                <h3>📧 Email 通知設定（SMTP）</h3>
+                <p style="font-size:.85rem;color:var(--gray-600);margin-bottom:16px">
+                    設定完成後，客人訂位時會自動收到確認信，同時通知信也會寄到 <strong>a0931223353@gmail.com</strong>
+                </p>
+                <div class="form-group"><label>SMTP 伺服器</label><input class="input" type="text" id="smtpHost" placeholder="例如: smtp.gmail.com"></div>
+                <div style="display:flex;gap:12px">
+                    <div class="form-group" style="flex:1"><label>Port</label><input class="input" type="number" id="smtpPort" value="587"></div>
+                    <div class="form-group" style="flex:1;display:flex;align-items:flex-end;padding-bottom:8px">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="smtpSecure"> 使用 SSL</label>
+                    </div>
+                </div>
+                <div class="form-group"><label>帳號（Email）</label><input class="input" type="text" id="smtpUser" placeholder="your@gmail.com"></div>
+                <div class="form-group"><label>密碼 / 應用程式密碼</label><input class="input" type="password" id="smtpPass" placeholder="App Password"></div>
+                <p style="font-size:.8rem;color:var(--gray-500);margin-bottom:12px">
+                    💡 如使用 Gmail，請至 Google 帳號設定產生「應用程式密碼」。<br>
+                    SMTP: smtp.gmail.com / Port: 587<br>
+                    如使用 Yahoo，SMTP: smtp.mail.yahoo.com / Port: 587
+                </p>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-primary" onclick="saveSmtpSettings()">儲存設定</button>
+                    <button class="btn btn-outline" onclick="testSmtp()">寄送測試信</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Modals ═══ -->
+
+<!-- News Modal -->
+<div class="modal-overlay" id="newsModal">
+    <div class="modal">
+        <h3 id="newsModalTitle">新增消息</h3>
+        <input type="hidden" id="newsEditId">
+        <div class="form-group"><label>日期</label><input class="input" type="date" id="newsDate"></div>
+        <div class="form-group"><label>標籤</label>
+            <select class="select" id="newsTag">
+                <option value="公告">公告</option>
+                <option value="活動">活動</option>
+                <option value="新品">新品</option>
+                <option value="歌手">歌手</option>
+                <option value="店休">店休</option>
+            </select>
+        </div>
+        <div class="form-group"><label>內容</label><textarea class="textarea" id="newsText" rows="3"></textarea></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('newsModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveNews()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Artist Modal -->
+<div class="modal-overlay" id="artistModal">
+    <div class="modal" style="width:640px">
+        <h3 id="artistModalTitle">新增歌手</h3>
+        <input type="hidden" id="artistEditId">
+        <div class="artist-form-grid">
+            <div>
+                <div class="artist-photo-upload" id="artistPhotoPreview">
+                    <span style="color:var(--gray-400)">&#128247; 上傳照片</span>
+                    <input type="file" accept="image/*" id="artistPhotoInput" onchange="previewArtistPhoto(this)">
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" style="width:100%;margin-top:8px" onclick="document.getElementById('artistPhotoInput').click()">更換照片</button>
+                <div class="form-group" style="margin-top:8px">
+                    <label>上下位置調整</label>
+                    <input type="range" id="artistPhotoPosY" min="0" max="100" value="50" style="width:100%" oninput="updatePhotoPreviewPos()">
+                    <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--gray-500)"><span>頭部</span><span>中間</span><span>下方</span></div>
+                </div>
+                <input type="hidden" id="artistPhotoFit" value="cover">
+            </div>
+            <div>
+                <div class="form-group"><label>歌手名稱 *</label><input class="input" id="artistName" required></div>
+                <div class="form-group"><label>簡介</label><textarea class="textarea" id="artistBio" rows="5"></textarea></div>
+                <div class="form-group"><label>排序位置</label><select class="input" id="artistOrder"></select></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('artistModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveArtist()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Modal -->
+<div class="modal-overlay" id="ticketModal">
+    <div class="modal" style="width:600px">
+        <h3 id="ticketModalTitle">新增售票演出</h3>
+        <input type="hidden" id="ticketEditId">
+        <div class="form-group"><label>歌手／樂團</label><input class="input" id="ticketArtist" placeholder="例：黃藍白、日充樂團、Tifa"></div>
+        <div class="form-row">
+            <div class="form-group"><label>演出名稱 *</label><input class="input" id="ticketTitle" required></div>
+            <div class="form-group"><label>票價（元）*</label><input class="input" type="number" id="ticketPrice" placeholder="500"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>演出日期 *</label><input class="input" type="date" id="ticketDate" required></div>
+            <div class="form-group"><label>演出時間</label><input class="input" id="ticketTime" placeholder="20:00"></div>
+        </div>
+        <div class="form-group"><label>演出說明</label><textarea class="textarea" id="ticketDesc" rows="3" placeholder="演出陣容、曲風、特色等"></textarea></div>
+        <div class="form-row">
+            <div class="form-group"><label>總票數</label><input class="input" type="number" id="ticketTotalTickets" placeholder="例：50"></div>
+            <div class="form-group"><label>剩餘票數（手動調整）</label><input class="input" type="number" id="ticketManualRemaining" placeholder="留空則自動計算"></div>
+        </div>
+        <div class="form-group"><label>匯款截止日</label><input class="input" type="date" id="ticketPaymentDeadline"></div>
+        <div class="form-group"><label>演出海報</label>
+            <button type="button" class="btn btn-outline" style="width:100%;padding:16px" id="ticketPosterBtn">選擇海報圖片</button>
+            <input type="file" accept="image/*" id="ticketPosterInput" style="position:absolute;left:-9999px">
+            <div id="ticketPosterPreview" style="margin-top:8px"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('ticketModal')">取消</button>
+            <button class="btn btn-primary" onclick="saveTicket()">儲存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Orders Modal -->
+<div class="modal-overlay" id="ticketOrdersModal">
+    <div class="modal" style="width:900px;max-width:95vw">
+        <h3 id="ticketOrdersTitle">訂單列表</h3>
+        <div id="ticketOrdersList" style="max-height:60vh;overflow-y:auto"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('ticketOrdersModal')">關閉</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let TOKEN = localStorage.getItem('lefunky_admin_token') || '';
+let menuImages = [];
+let allArtists = [];
+
+// ─── Auth ───
+async function handleLogin(e) {
+    e.preventDefault();
+    const pwd = document.getElementById('loginPwd').value;
+    try {
+        const r = await fetch('/api/login', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ password: pwd })
+        });
+        if (r.ok) {
+            const d = await r.json();
+            TOKEN = d.token;
+            localStorage.setItem('lefunky_admin_token', TOKEN);
+            showApp();
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    } catch { toast('網路錯誤','error'); }
+    return false;
+}
+
+function showApp() {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+    loadDashboard();
+    // 綁定海報上傳按鈕
+    document.getElementById('ticketPosterBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('ticketPosterInput').click();
+    });
+    document.getElementById('ticketPosterInput').addEventListener('change', function() {
+        if (this.files[0]) {
+            document.getElementById('ticketPosterPreview').innerHTML = '<img src="'+URL.createObjectURL(this.files[0])+'" style="max-width:200px;border-radius:6px">';
+            document.getElementById('ticketPosterBtn').textContent = '已選擇：' + this.files[0].name;
+        }
+    });
+}
+
+function logout() {
+    fetch('/api/logout', { method:'POST', headers: authHeaders() });
+    TOKEN = '';
+    localStorage.removeItem('lefunky_admin_token');
+    location.reload();
+}
+
+function authHeaders() { return { 'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json' }; }
+function authHeadersNoJSON() { return { 'Authorization':'Bearer '+TOKEN }; }
+
+// 檢查 token 是否有效，無效則跳回登入
+async function checkAuth() {
+    if (!TOKEN) return false;
+    try {
+        const r = await fetch('/api/smtp-settings', { headers: authHeaders() });
+        if (r.status === 401) {
+            toast('登入已過期，請重新登入', 'error');
+            TOKEN = '';
+            localStorage.removeItem('lefunky_admin_token');
+            setTimeout(() => location.reload(), 1500);
+            return false;
+        }
+        return true;
+    } catch { return true; }
+}
+
+
+// Auto-login if token exists
+(async function() {
+    if (TOKEN) {
+        try {
+            const r = await fetch('/api/reservations', { headers: authHeaders() });
+            if (r.ok) { showApp(); return; }
+        } catch {}
+    }
+    document.getElementById('loginPage').style.display = 'flex';
+})();
+
+// ─── Navigation ───
+function switchAdminPanel(panelName) {
+    document.querySelectorAll('.sidebar a').forEach(x => x.classList.remove('active'));
+    const link = document.querySelector(`.sidebar a[data-panel="${panelName}"]`);
+    if (link) link.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    const id = 'panel' + panelName.charAt(0).toUpperCase() + panelName.slice(1);
+    const panel = document.getElementById(id);
+    if (panel) panel.classList.add('active');
+    location.hash = panelName;
+    const loaders = { dashboard:loadDashboard, schedule:loadScheduleAdmin, news:loadNewsAdmin, artists:loadArtistsAdmin, gallery:loadGalleryAdmin, menuEdit:loadMenuAdmin, tickets:loadTicketsAdmin, reservations:loadResAdmin, settings:loadSmtpSettings };
+    const fn = loaders[panelName];
+    if (fn) fn();
+}
+document.querySelectorAll('.sidebar a[data-panel]').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        switchAdminPanel(a.dataset.panel);
+    });
+});
+// Restore panel from URL hash on load
+(function() {
+    const hash = location.hash.replace('#','');
+    if (hash) { setTimeout(() => switchAdminPanel(hash), 300); }
+})();
+
+// ─── Toast ───
+function toast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── Dashboard ───
+async function loadDashboard() {
+    try {
+        const res = await (await fetch('/api/reservations', { headers: authHeaders() })).json();
+        const today = new Date().toISOString().split('T')[0];
+        const todayRes = res.filter(r => r.date === today);
+        const pending = res.filter(r => r.status === 'pending');
+        const thisWeek = res.filter(r => { const d = new Date(r.date); const now = new Date(); const diff = (d-now)/(86400000); return diff >= 0 && diff <= 7; });
+
+        document.getElementById('dashStats').innerHTML = `
+            <div class="stat"><div class="num">${todayRes.length}</div><div class="lbl">今日訂位</div></div>
+            <div class="stat"><div class="num">${pending.length}</div><div class="lbl">待確認</div></div>
+            <div class="stat"><div class="num">${thisWeek.length}</div><div class="lbl">本週訂位</div></div>
+            <div class="stat"><div class="num">${res.length}</div><div class="lbl">總訂位數</div></div>
+        `;
+
+        document.getElementById('dashReservations').innerHTML = todayRes.length ? todayRes.map(r => `
+            <tr>
+                <td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td>${esc(r.time)}</td>
+                <td>${esc(r.guests)} 位</td>
+                <td><span class="badge badge-${r.status}">${statusLabel(r.status)}</span></td>
+            </tr>
+        `).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--gray-500)">今日無訂位</td></tr>';
+    } catch {}
+}
+
+function statusLabel(s) { return {pending:'待確認',confirmed:'已確認',cancelled:'已取消'}[s] || s; }
+function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+// ─── Schedule ───
+let scheduleImages = [];
+async function loadScheduleAdmin() {
+    const data = await (await fetch('/api/schedule', { headers: authHeadersNoJSON() })).json();
+    scheduleImages = data.images || [];
+    const c = document.getElementById('scheduleList');
+    if (!scheduleImages.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳節目表</p>'; return; }
+    c.innerHTML = scheduleImages.map((img, i) => `
+        <div class="schedule-preview" style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="background:var(--gold);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600">${i+1}</span>
+                    <small style="color:var(--gray-500)">${new Date(img.uploadedAt).toLocaleDateString('zh-TW')}</small>
+                </div>
+                <div style="display:flex;gap:4px">
+                    ${i > 0 ? `<button class="btn btn-outline btn-sm" onclick="moveSchedule(${i},-1)" title="上移">▲</button>` : ''}
+                    ${i < scheduleImages.length - 1 ? `<button class="btn btn-outline btn-sm" onclick="moveSchedule(${i},1)" title="下移">▼</button>` : ''}
+                    <button class="btn btn-danger btn-sm" onclick="deleteSchedule('${img.filename}')">刪除</button>
+                </div>
+            </div>
+            <img src="${img.url}" alt="節目表" style="max-width:100%;border-radius:var(--radius)">
+        </div>
+    `).join('');
+}
+
+async function moveSchedule(idx, dir) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= scheduleImages.length) return;
+    const filenames = scheduleImages.map(x => x.filename);
+    [filenames[idx], filenames[newIdx]] = [filenames[newIdx], filenames[idx]];
+    const r = await fetch('/api/schedule/reorder', { method:'PUT', headers: authHeaders(), body: JSON.stringify({ filenames }) });
+    if (r.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
+    if (r.ok) { toast('排序已更新'); loadScheduleAdmin(); }
+}
+
+async function uploadSchedule(file) {
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('image', file);
+    try {
+        const r = await fetch('/api/schedule', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+        if (r.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
+        if (r.ok) { toast('上傳成功'); loadScheduleAdmin(); }
+        else toast('上傳失敗','error');
+    } catch { toast('上傳失敗','error'); }
+}
+
+async function deleteSchedule(fn) {
+    if (!confirm('確定刪除此節目表？')) return;
+    await fetch('/api/schedule/'+fn, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadScheduleAdmin();
+}
+
+// ─── News ───
+async function loadNewsAdmin() {
+    const news = await (await fetch('/api/news')).json();
+    document.getElementById('newsList').innerHTML = news.length ? news.map(n => `
+        <tr>
+            <td>${esc(n.date)}</td><td><span class="badge badge-pending">${esc(n.tag)}</span></td>
+            <td>${esc(n.text)}</td>
+            <td>
+                <button class="btn btn-outline btn-sm" onclick='editNews(${JSON.stringify(n)})'>編輯</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteNews('${n.id}')">刪除</button>
+            </td>
+        </tr>
+    `).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--gray-500)">暫無消息</td></tr>';
+}
+
+function openNewsModal(item) {
+    document.getElementById('newsModalTitle').textContent = item ? '編輯消息' : '新增消息';
+    document.getElementById('newsEditId').value = item?.id || '';
+    document.getElementById('newsDate').value = item?.date?.replace(/\//g,'-') || new Date().toISOString().split('T')[0];
+    document.getElementById('newsTag').value = item?.tag || '公告';
+    document.getElementById('newsText').value = item?.text || '';
+    document.getElementById('newsModal').classList.add('open');
+}
+
+function editNews(n) { openNewsModal(n); }
+
+async function saveNews() {
+    const id = document.getElementById('newsEditId').value;
+    const body = {
+        date: document.getElementById('newsDate').value.replace(/-/g,'/'),
+        tag: document.getElementById('newsTag').value,
+        text: document.getElementById('newsText').value
+    };
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? '/api/news/'+id : '/api/news';
+    await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+    closeModal('newsModal');
+    toast('已儲存');
+    loadNewsAdmin();
+}
+
+async function deleteNews(id) {
+    if (!confirm('確定刪除？')) return;
+    await fetch('/api/news/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadNewsAdmin();
+}
+
+// ─── Artists ───
+async function loadArtistsAdmin() {
+    let artists = [];
+    try { artists = await (await fetch('/api/artists')).json(); } catch(e) { console.error('loadArtists error', e); }
+    const c = document.getElementById('artistsList');
+    if (!artists.length) { c.innerHTML = '<div class="card"><p style="color:var(--gray-500)">尚未新增歌手</p></div>'; return; }
+    allArtists = artists;
+    c.innerHTML = '<div class="card" style="padding:0;overflow:hidden">' + artists.map((a, i) => {
+        return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--gray-200)">
+            <span style="color:var(--gray-500);font-size:.75rem;width:20px;text-align:center;flex-shrink:0">${i+1}</span>
+            <button class="btn btn-outline btn-sm" style="padding:1px 6px;font-size:.65rem" ${i===0?'disabled':''} onclick="moveArtist('${a.id}',-1)">&uarr;</button>
+            <button class="btn btn-outline btn-sm" style="padding:1px 6px;font-size:.65rem" ${i===artists.length-1?'disabled':''} onclick="moveArtist('${a.id}',1)">&darr;</button>
+            <div style="width:40px;height:40px;border-radius:6px;overflow:hidden;background:var(--gray-200);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                ${a.photo ? `<img src="${a.photo}" style="width:100%;height:100%;object-fit:cover">` : '<span style="font-size:1rem">&#127908;</span>'}
+            </div>
+            <div style="flex:1;min-width:0;font-weight:500;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</div>
+            <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:.75rem" onclick='editArtist("${a.id}")'>編輯</button>
+            <button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:.75rem" onclick="deleteArtist('${a.id}')">刪除</button>
+        </div>`;
+    }).join('') + '</div>';
+}
+
+async function moveArtist(id, direction) {
+    const idx = allArtists.findIndex(a => a.id === id);
+    if (idx === -1) return;
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= allArtists.length) return;
+    // Swap orders
+    const orderA = allArtists[idx].order;
+    const orderB = allArtists[swapIdx].order;
+    await fetch('/api/artists/' + allArtists[idx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderB }) });
+    await fetch('/api/artists/' + allArtists[swapIdx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderA }) });
+    loadArtistsAdmin();
+}
+
+function openArtistModal(item) {
+    document.getElementById('artistModalTitle').textContent = item ? '編輯歌手' : '新增歌手';
+    document.getElementById('artistEditId').value = item?.id || '';
+    document.getElementById('artistName').value = item?.name || '';
+    document.getElementById('artistBio').value = item?.bio || '';
+    // Populate order dropdown
+    const orderSelect = document.getElementById('artistOrder');
+    const total = allArtists.length + (item ? 0 : 1);
+    orderSelect.innerHTML = Array.from({length: total}, (_, i) => `<option value="${i+1}"${(item ? item.order : total) === i+1 ? ' selected' : ''}>第 ${i+1} 位</option>`).join('');
+    document.getElementById('artistPhotoFit').value = item?.photoFit || 'cover';
+    document.getElementById('artistPhotoPosY').value = item?.photoPosY ?? 50;
+    document.getElementById('artistPhotoInput').value = '';
+    const preview = document.getElementById('artistPhotoPreview');
+    const existing = preview.querySelector('img');
+    if (existing) existing.remove();
+    if (item?.photo) {
+        const img = document.createElement('img');
+        img.src = item.photo;
+        preview.appendChild(img);
+        setTimeout(updatePhotoPreviewPos, 100);
+    }
+    document.getElementById('artistModal').classList.add('open');
+}
+
+async function editArtist(id) {
+    const artists = await (await fetch('/api/artists')).json();
+    const a = artists.find(x => x.id === id);
+    if (a) openArtistModal(a);
+}
+
+function previewArtistPhoto(input) {
+    if (!input.files[0]) return;
+    const preview = document.getElementById('artistPhotoPreview');
+    let img = preview.querySelector('img');
+    if (!img) { img = document.createElement('img'); preview.appendChild(img); }
+    img.src = URL.createObjectURL(input.files[0]);
+    document.getElementById('artistPhotoPosY').value = 50;
+    updatePhotoPreviewPos();
+}
+
+function updatePhotoPreviewPos() {
+    const img = document.querySelector('#artistPhotoPreview img');
+    if (!img) return;
+    const posY = document.getElementById('artistPhotoPosY').value;
+    img.style.objectFit = 'cover';
+    img.style.objectPosition = `center ${posY}%`;
+}
+
+async function saveArtist() {
+    const name = document.getElementById('artistName').value;
+    if (!name.trim()) { toast('請輸入歌手名稱','error'); return; }
+    try {
+        const id = document.getElementById('artistEditId').value;
+        const fd = new FormData();
+        fd.append('name', name);
+        fd.append('genre', '');
+        fd.append('bio', document.getElementById('artistBio').value);
+        fd.append('ig', '');
+        fd.append('youtube', '');
+        fd.append('spotify', '');
+        fd.append('order', document.getElementById('artistOrder').value);
+        fd.append('photoFit', document.getElementById('artistPhotoFit').value);
+        fd.append('photoPosY', document.getElementById('artistPhotoPosY').value);
+        const file = document.getElementById('artistPhotoInput').files[0];
+        if (file) fd.append('photo', file);
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/artists/'+id : '/api/artists';
+        const r = await fetch(url, { method, headers: authHeadersNoJSON(), body: fd });
+        if (r.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
+        if (!r.ok) { const err = await r.text(); toast('儲存失敗: '+err,'error'); return; }
+        closeModal('artistModal');
+        toast('已儲存');
+        await loadArtistsAdmin();
+    } catch(e) { toast('儲存失敗: '+e.message,'error'); }
+}
+
+async function deleteArtist(id) {
+    if (!confirm('確定刪除此歌手？')) return;
+    await fetch('/api/artists/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadArtistsAdmin();
+}
+
+// ─── Gallery ───
+async function loadGalleryAdmin() {
+    const gallery = await (await fetch('/api/gallery')).json();
+    const c = document.getElementById('galleryList');
+    if (!gallery.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳照片</p>'; return; }
+    c.innerHTML = gallery.map(g => `
+        <div class="img-card">
+            <img src="${g.url}" alt="${esc(g.caption)}">
+            <div class="img-overlay">
+                <span class="img-caption">${esc(g.caption) || '(無說明)'}</span>
+                <button class="img-del" onclick="deleteGallery('${g.id}')">刪除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function uploadGalleryPhoto(file) {
+    if (!file) return;
+    const caption = prompt('照片說明（可留空）：') || '';
+    const fd = new FormData();
+    fd.append('photo', file);
+    fd.append('caption', caption);
+    await fetch('/api/gallery', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+    toast('上傳成功'); loadGalleryAdmin();
+}
+
+async function deleteGallery(id) {
+    if (!confirm('確定刪除？')) return;
+    await fetch('/api/gallery/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadGalleryAdmin();
+}
+
+// ─── Menu Images ───
+async function loadMenuAdmin() {
+    menuImages = await (await fetch('/api/menu-images')).json();
+    const c = document.getElementById('menuImagesList');
+    if (!menuImages.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳菜單照片</p>'; return; }
+    c.innerHTML = menuImages.map(img => `
+        <div class="img-card">
+            <img src="${img.url}" alt="${esc(img.caption)}">
+            <div class="img-overlay">
+                <span class="img-caption">${esc(img.caption) || '(無說明)'}</span>
+                <button class="img-del" onclick="deleteMenuImage('${img.id}')">刪除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function uploadMenuPhoto(file) {
+    if (!file) return;
+    const caption = prompt('菜單說明（可留空）：') || '';
+    const fd = new FormData();
+    fd.append('photo', file);
+    fd.append('caption', caption);
+    await fetch('/api/menu-images', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+    toast('上傳成功'); loadMenuAdmin();
+}
+
+async function deleteMenuImage(id) {
+    if (!confirm('確定刪除此菜單照片？')) return;
+    await fetch('/api/menu-images/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadMenuAdmin();
+}
+
+// ─── Reservations ───
+async function loadResAdmin() {
+    const res = await (await fetch('/api/reservations', { headers: authHeaders() })).json();
+    document.getElementById('resList').innerHTML = res.length ? res.map(r => `
+        <tr>
+            <td>${esc(r.date)}</td><td>${esc(r.time)}</td><td>${esc(r.name)}</td>
+            <td>${esc(r.phone)}</td><td style="font-size:.8rem">${esc(r.email || '')}</td><td>${esc(r.guests)} 位</td><td>${esc(r.note)}</td>
+            <td><span class="badge badge-${r.status}">${statusLabel(r.status)}</span></td>
+            <td style="white-space:nowrap">
+                ${r.status==='pending'?`<button class="btn btn-sm" style="background:var(--green);color:#fff" onclick="updateRes('${r.id}','confirmed')">確認</button>`:''}
+                ${r.status!=='cancelled'?`<button class="btn btn-outline btn-sm" onclick="updateRes('${r.id}','cancelled')">取消</button>`:''}
+                <button class="btn btn-danger btn-sm" onclick="deleteRes('${r.id}')">刪除</button>
+            </td>
+        </tr>
+    `).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--gray-500)">無訂位紀錄</td></tr>';
+}
+
+// ─── SMTP Settings ───
+async function loadSmtpSettings() {
+    try {
+        const r = await fetch('/api/smtp-settings', { headers: authHeaders() });
+        if (r.ok) {
+            const s = await r.json();
+            document.getElementById('smtpHost').value = s.host || '';
+            document.getElementById('smtpPort').value = s.port || 587;
+            document.getElementById('smtpSecure').checked = !!s.secure;
+            document.getElementById('smtpUser').value = s.user || '';
+            document.getElementById('smtpPass').value = s.pass || '';
+        }
+    } catch(e) { console.error('loadSmtp error', e); }
+}
+
+async function saveSmtpSettings() {
+    const data = {
+        host: document.getElementById('smtpHost').value.trim(),
+        port: document.getElementById('smtpPort').value,
+        secure: document.getElementById('smtpSecure').checked,
+        user: document.getElementById('smtpUser').value.trim(),
+        pass: document.getElementById('smtpPass').value
+    };
+    if (!data.host || !data.user || !data.pass) { toast('請填寫完整的 SMTP 設定', 'error'); return; }
+    try {
+        const r = await fetch('/api/smtp-settings', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+        if (r.ok) { toast('SMTP 設定已儲存'); }
+        else { toast('儲存失敗', 'error'); }
+    } catch(e) { toast('儲存失敗: ' + e.message, 'error'); }
+}
+
+async function testSmtp() {
+    try {
+        const r = await fetch('/api/smtp-test', { method: 'POST', headers: authHeaders() });
+        const d = await r.json();
+        if (r.ok) { toast(d.message); }
+        else { toast(d.error, 'error'); }
+    } catch(e) { toast('測試失敗: ' + e.message, 'error'); }
+}
+
+async function updateRes(id, status) {
+    await fetch('/api/reservations/'+id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({status}) });
+    toast('已更新'); loadResAdmin();
+}
+
+async function deleteRes(id) {
+    if (!confirm('確定刪除？')) return;
+    await fetch('/api/reservations/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadResAdmin();
+}
+
+// ─── Tickets ───
+async function loadTicketsAdmin() {
+    try {
+        const resp = await fetch('/api/tickets', { headers: authHeaders() });
+        const tickets = await resp.json();
+        const c = document.getElementById('ticketsList');
+        if (!tickets.length) { c.innerHTML = '<div class="card"><p style="color:var(--gray-500)">尚未新增售票演出</p></div>'; return; }
+        c.innerHTML = tickets.map(t => {
+            const totalTickets = t.totalTickets || 0;
+            const remaining = t.remaining !== undefined ? t.remaining : totalTickets;
+            const soldOut = remaining <= 0 && totalTickets > 0;
+            const titleSafe = esc(t.title).replace(/"/g,'&quot;');
+            return `
+            <div class="card" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+                <div style="width:120px;height:68px;border-radius:8px;overflow:hidden;background:var(--gray-200);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                    ${t.poster ? `<img src="${t.poster}" style="width:100%;height:100%;object-fit:cover">` : '<span style="font-size:1.5rem">&#127926;</span>'}
+                </div>
+                <div style="flex:1;min-width:180px">
+                    <div style="font-weight:500;font-size:1rem">${esc(t.title)}</div>
+                    <div style="font-size:.82rem;color:var(--gray-600)">${esc(t.date)} ${esc(t.time)} &mdash; $${t.price}/人</div>
+                    <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
+                        ${soldOut ? '<span class="badge badge-cancelled">已售完</span>' : '<span class="badge badge-confirmed">販售中</span>'}
+                        ${totalTickets > 0 ? `<span style="font-size:.8rem;color:var(--gray-600)">剩餘 ${remaining}/${totalTickets} 張</span>` : ''}
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                    <button class="btn btn-outline btn-sm" onclick="viewTicketOrders('${t.id}','${titleSafe}')">查看訂單</button>
+                    <button class="btn btn-outline btn-sm" onclick="editTicket('${t.id}')">編輯</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTicket('${t.id}')">刪除</button>
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) { console.error('loadTicketsAdmin error:', e); document.getElementById('ticketsList').innerHTML = '<div class="card"><p style="color:red">載入失敗: '+e.message+'</p></div>'; }
+}
+
+function openTicketModal(item) {
+    document.getElementById('ticketModalTitle').textContent = item ? '編輯售票演出' : '新增售票演出';
+    document.getElementById('ticketEditId').value = item?.id || '';
+    document.getElementById('ticketTitle').value = item?.title || '';
+    document.getElementById('ticketPrice').value = item?.price || '';
+    document.getElementById('ticketArtist').value = item?.artist || '';
+    document.getElementById('ticketDate').value = item?.date || '';
+    document.getElementById('ticketTime').value = item?.time || '';
+    document.getElementById('ticketDesc').value = item?.description || '';
+    document.getElementById('ticketTotalTickets').value = item?.totalTickets || '';
+    document.getElementById('ticketManualRemaining').value = item?.manualRemaining ?? '';
+    document.getElementById('ticketPaymentDeadline').value = item?.paymentDeadline || '';
+    document.getElementById('ticketPosterInput').value = '';
+    document.getElementById('ticketPosterPreview').innerHTML = item?.poster ? `<img src="${item.poster}" style="max-width:200px;border-radius:6px">` : '';
+    document.getElementById('ticketModal').classList.add('open');
+}
+
+async function editTicket(id) {
+    const tickets = await (await fetch('/api/tickets', { headers: authHeaders() })).json();
+    const t = tickets.find(x => x.id === id);
+    if (t) openTicketModal(t);
+}
+
+async function saveTicket() {
+    try {
+        const title = document.getElementById('ticketTitle').value.trim();
+        const date = document.getElementById('ticketDate').value;
+        if (!title) { toast('請填寫演出名稱', 'error'); return; }
+        if (!date) { toast('請填寫演出日期', 'error'); return; }
+        const id = document.getElementById('ticketEditId').value;
+        const fd = new FormData();
+        fd.append('title', title);
+        fd.append('price', document.getElementById('ticketPrice').value || '0');
+        fd.append('date', date);
+        fd.append('time', document.getElementById('ticketTime').value);
+        fd.append('artist', document.getElementById('ticketArtist').value);
+        fd.append('description', document.getElementById('ticketDesc').value);
+        fd.append('totalTickets', document.getElementById('ticketTotalTickets').value || '0');
+        fd.append('manualRemaining', document.getElementById('ticketManualRemaining').value);
+        fd.append('paymentDeadline', document.getElementById('ticketPaymentDeadline').value);
+        const file = document.getElementById('ticketPosterInput').files[0];
+        if (file) fd.append('poster', file);
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/tickets/'+id : '/api/tickets';
+        const resp = await fetch(url, { method, headers: authHeadersNoJSON(), body: fd });
+        if (!resp.ok) { const err = await resp.text(); toast('儲存失敗: ' + err, 'error'); return; }
+        closeModal('ticketModal');
+        toast('已儲存');
+        loadTicketsAdmin();
+    } catch(e) { toast('儲存失敗: ' + e.message, 'error'); console.error(e); }
+}
+
+async function deleteTicket(id) {
+    if (!confirm('確定刪除此售票演出？')) return;
+    await fetch('/api/tickets/'+id, { method:'DELETE', headers: authHeaders() });
+    toast('已刪除'); loadTicketsAdmin();
+}
+
+// ─── Ticket Orders ───
+async function viewTicketOrders(ticketId, title) {
+    document.getElementById('ticketOrdersTitle').textContent = '訂單列表 - ' + title;
+    document.getElementById('ticketOrdersModal').classList.add('open');
+    const c = document.getElementById('ticketOrdersList');
+    c.innerHTML = '<p style="color:var(--gray-500)">載入中...</p>';
+    try {
+        const orders = await (await fetch('/api/ticket-orders/' + ticketId, { headers: authHeaders() })).json();
+        if (!orders.length) {
+            c.innerHTML = '<p style="color:var(--gray-500)">尚無訂單</p>';
+            return;
+        }
+        c.innerHTML = `
+            <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+                <thead>
+                    <tr style="background:var(--gray-100);text-align:left">
+                        <th style="padding:10px 8px">姓名</th>
+                        <th style="padding:10px 8px">電話</th>
+                        <th style="padding:10px 8px">Email</th>
+                        <th style="padding:10px 8px">票數</th>
+                        <th style="padding:10px 8px">帳號末五碼</th>
+                        <th style="padding:10px 8px">已匯款</th>
+                        <th style="padding:10px 8px">狀態</th>
+                        <th style="padding:10px 8px">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${orders.map(o => `
+                        <tr style="border-bottom:1px solid var(--gray-200)">
+                            <td style="padding:10px 8px">${esc(o.name)}</td>
+                            <td style="padding:10px 8px">${esc(o.phone)}</td>
+                            <td style="padding:10px 8px">${esc(o.email || '-')}</td>
+                            <td style="padding:10px 8px">${o.quantity}</td>
+                            <td style="padding:10px 8px">${esc(o.bankLast5)}</td>
+                            <td style="padding:10px 8px">${o.hasPaid ? '<span class="badge badge-confirmed">是</span>' : '<span class="badge badge-pending">否</span>'}</td>
+                            <td style="padding:10px 8px">${o.status === 'confirmed' ? '<span class="badge badge-confirmed">已確認</span>' : o.status === 'cancelled' ? '<span class="badge badge-cancelled">已取消</span>' : '<span class="badge badge-pending">待確認</span>'}</td>
+                            <td style="padding:10px 8px;white-space:nowrap">
+                                ${o.status !== 'confirmed' ? `<button class="btn btn-primary btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="confirmOrder('${o.id}','${ticketId}','${esc(title).replace(/'/g,"\\&#39;")}')">確認</button>` : ''}
+                                ${!o.hasPaid ? `<button class="btn btn-outline btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="markOrderPaid('${o.id}','${ticketId}','${esc(title).replace(/'/g,"\\&#39;")}')">已匯款</button>` : ''}
+                                <button class="btn btn-danger btn-sm" style="font-size:.75rem;padding:4px 8px" onclick="deleteOrder('${o.id}','${ticketId}','${esc(title).replace(/'/g,"\\&#39;")}')">刪除</button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <div style="margin-top:12px;font-size:.85rem;color:var(--gray-600)">
+                共 ${orders.length} 筆訂單，合計 ${orders.filter(o=>o.status!=='cancelled').reduce((s,o)=>s+o.quantity,0)} 張票
+            </div>
+        `;
+    } catch(e) {
+        c.innerHTML = '<p style="color:var(--error)">載入失敗: ' + e.message + '</p>';
+    }
+}
+
+async function confirmOrder(orderId, ticketId, title) {
+    await fetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'confirmed', hasPaid: true }) });
+    toast('已確認');
+    viewTicketOrders(ticketId, title);
+    loadTicketsAdmin();
+}
+
+async function markOrderPaid(orderId, ticketId, title) {
+    await fetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ hasPaid: true }) });
+    toast('已標記為已匯款');
+    viewTicketOrders(ticketId, title);
+}
+
+async function deleteOrder(orderId, ticketId, title) {
+    if (!confirm('確定刪除此訂單？')) return;
+    await fetch('/api/ticket-orders/' + orderId, { method: 'DELETE', headers: authHeaders() });
+    toast('已刪除');
+    viewTicketOrders(ticketId, title);
+    loadTicketsAdmin();
+}
+
+// ─── Settings ───
+async function changePassword(e) {
+    e.preventDefault();
+    const r = await fetch('/api/settings/password', {
+        method:'PUT', headers: authHeaders(),
+        body: JSON.stringify({ oldPassword: document.getElementById('oldPwd').value, newPassword: document.getElementById('newPwd').value })
+    });
+    if (r.ok) { toast('密碼已更新'); document.getElementById('oldPwd').value=''; document.getElementById('newPwd').value=''; }
+    else { const d = await r.json(); toast(d.error || '更新失敗','error'); }
+    return false;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>購票訂購 - 樂放音樂展演空間</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans TC',sans-serif;background:#f6f4ef;color:#1e2d3d;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+        .back-link{align-self:flex-start;max-width:680px;width:100%;margin:0 auto 16px;font-size:.9rem;color:#6a7a8a;text-decoration:none}
+        .back-link:hover{color:#1e2d3d}
+        .order-page{max-width:680px;width:100%;background:#fff;border-radius:12px;border:1px solid #e4dfd4;overflow:hidden}
+        .order-header{padding:24px 28px;border-bottom:1px solid #e4dfd4}
+        .order-header .artist{font-size:1.1rem;font-weight:500;margin-bottom:2px}
+        .order-header .title{font-size:1.1rem;font-weight:500;margin-bottom:6px}
+        .order-header .meta{font-size:.9rem;color:#6a7a8a}
+        .order-header .price{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#8a7440;margin-top:8px}
+        .order-header .remaining{font-size:.85rem;color:#7a9a8a;margin-top:4px}
+        .order-header .remaining.low{color:#c45a5a}
+        .order-poster{width:100%;max-height:300px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f2efe8}
+        .order-poster img{width:100%;height:auto;max-height:300px;object-fit:contain}
+        .order-body{padding:28px}
+        .bank-info{background:#f6f4ef;border:1px solid #e4dfd4;border-radius:8px;padding:18px;margin-bottom:24px;font-size:.9rem;line-height:2}
+        .bank-info strong{color:#8a7440}
+        .bank-info .deadline{color:#c45a5a;font-weight:500;margin-top:6px}
+        .bank-info .note{color:#8a7440;margin-top:6px}
+        .notice{background:#fff8e6;border:1px solid #e4dfd4;border-radius:8px;padding:14px 18px;margin-bottom:24px;font-size:.85rem;color:#8a7440;line-height:1.7}
+        .fg{margin-bottom:16px}
+        .fg label{display:block;font-size:.9rem;font-weight:500;margin-bottom:6px;color:#1e2d3d}
+        .fg input,.fg select{width:100%;padding:12px 14px;border:1px solid #e4dfd4;border-radius:6px;font-size:.95rem;font-family:'Noto Sans TC',sans-serif;background:#fff}
+        .fg input:focus,.fg select:focus{outline:none;border-color:#c4a55a}
+        .check-row{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+        .check-row input[type=checkbox]{width:auto}
+        .btn-submit{width:100%;padding:14px;background:#1e2d3d;color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:500;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .3s}
+        .btn-submit:hover{background:#2a3d4d}
+        .btn-submit:disabled{background:#a0a8b0;cursor:not-allowed}
+        .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:14px 28px;border-radius:8px;font-size:.9rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+        .toast.show{opacity:1}
+        .toast.success{background:#4a8a5a;color:#fff}
+        .toast.error{background:#c45a5a;color:#fff}
+        .success-page{text-align:center;padding:60px 28px}
+        .success-page h2{color:#4a8a5a;font-size:1.5rem;margin-bottom:12px}
+        .success-page p{color:#6a7a8a;line-height:1.8;margin-bottom:8px}
+        .success-page .back-btn{display:inline-block;margin-top:20px;padding:12px 32px;background:#1e2d3d;color:#fff;border-radius:8px;text-decoration:none;font-size:.95rem}
+        .loading{text-align:center;padding:60px;color:#6a7a8a}
+        @media(max-width:500px){
+            body{padding:10px}
+            .order-body{padding:20px}
+        }
+    </style>
+</head>
+<body>
+
+<a href="/#tickets" class="back-link">&larr; 返回售票列表</a>
+
+<div class="order-page" id="orderPage">
+    <div class="loading" id="loadingState">載入中...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ticketId = new URLSearchParams(location.search).get('id');
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 3000);
+}
+
+async function init() {
+    if (!ticketId) { document.getElementById('loadingState').textContent = '找不到演出資訊'; return; }
+    try {
+        const tickets = await (await fetch('/api/tickets')).json();
+        const t = tickets.find(x => x.id === ticketId);
+        if (!t) { document.getElementById('loadingState').textContent = '找不到此演出'; return; }
+
+        const remaining = t.remaining;
+        const totalTickets = t.totalTickets || 0;
+        const soldOut = t.soldOut;
+        const lowStock = totalTickets > 0 && remaining > 0 && remaining <= 10;
+        const deadlineText = t.paymentDeadline ? t.paymentDeadline.replace(/-/g, '/') : '';
+        const artistText = t.artist ? `<div class="artist">${esc(t.artist)}</div>` : '';
+        const maxQty = Math.min(10, remaining || 10);
+        const ticketPrice = t.price;
+        _ticketPrice = ticketPrice;
+        const qtyOptions = maxQty > 0 ? Array.from({length: maxQty}, (_, i) => `<option value="${i+1}">${i+1}（${(i+1) * ticketPrice} 元）</option>`).join('') : '';
+
+        if (soldOut) {
+            document.getElementById('orderPage').innerHTML = `
+                ${t.poster ? `<div class="order-poster"><img src="${esc(t.poster)}" alt="${esc(t.title)}"></div>` : ''}
+                <div class="order-header">
+                    ${artistText}
+                    <div class="title">${esc(t.title)}</div>
+                    <div class="meta">${esc(t.date.replace(/-/g,'/'))}　${esc(t.time)}</div>
+                    <div class="price">$${t.price} / 人</div>
+                </div>
+                <div class="success-page">
+                    <h2 style="color:#c45a5a">已售完</h2>
+                    <p>此場演出票券已全數售完，感謝您的支持！</p>
+                    <a href="/#tickets" class="back-btn">返回售票列表</a>
+                </div>`;
+            return;
+        }
+
+        document.getElementById('orderPage').innerHTML = `
+            ${t.poster ? `<div class="order-poster"><img src="${esc(t.poster)}" alt="${esc(t.title)}"></div>` : ''}
+            <div class="order-header">
+                ${artistText}
+                <div class="title">${esc(t.title)}</div>
+                <div class="meta">${esc(t.date.replace(/-/g,'/'))}　${esc(t.time)}</div>
+                <div class="price">$${t.price} / 人</div>
+                ${totalTickets > 0 ? `<div class="remaining${lowStock ? ' low' : ''}">剩餘 ${remaining} 張</div>` : ''}
+            </div>
+            <div class="order-body">
+                <div class="bank-info">
+                    <div><strong>匯款資訊</strong></div>
+                    <div>戶名：樂放音樂展演空間有限公司</div>
+                    <div>銀行代號：807</div>
+                    <div>帳號：19601800058672</div>
+                    ${deadlineText ? `<div class="deadline">【購票費用請於 ${esc(deadlineText)} 前轉至指定帳戶】</div>` : ''}
+                    <div class="note">＊匯款時請註記『${esc(t.title)}』</div>
+                </div>
+                <div class="notice">
+                    提醒您：送出購票資料後，需等待我們確認收到匯款，才會寄送「購票確認信」至您的 Email。<br>
+                    演出當日請出示該確認信入場。
+                </div>
+                <div class="fg"><label>姓名 <span style="color:#c45a5a">*</span></label><input type="text" id="oName" placeholder="請輸入姓名"></div>
+                <div class="fg"><label>聯絡電話 <span style="color:#c45a5a">*</span></label><input type="tel" id="oPhone" placeholder="0912-345-678"></div>
+                <div class="fg"><label>Email <span style="color:#c45a5a">*</span></label><input type="email" id="oEmail" placeholder="your@email.com"></div>
+                <div class="fg"><label>訂購票數 <span style="color:#c45a5a">*</span></label><select id="oQty" onchange="updateTotal()">${qtyOptions}</select><div id="totalPrice" style="margin-top:6px;font-size:.9rem;color:#8a7440;font-weight:500">合計：${ticketPrice} 元</div></div>
+                <div class="fg"><label>匯款帳號末五碼 <span style="color:#c45a5a">*</span></label><input type="text" id="oBank" maxlength="5" placeholder="請輸入末五碼"></div>
+                <div class="check-row"><input type="checkbox" id="oPaid"><label style="margin:0;font-size:.9rem">我已完成匯款</label></div>
+                <button class="btn-submit" id="submitBtn" onclick="submitOrder()">送出購票</button>
+            </div>`;
+    } catch(e) {
+        document.getElementById('loadingState').textContent = '載入失敗，請重新整理';
+    }
+}
+
+let _ticketPrice = 0;
+function updateTotal() {
+    const qty = parseInt(document.getElementById('oQty').value) || 1;
+    document.getElementById('totalPrice').textContent = '合計：' + (qty * _ticketPrice) + ' 元';
+}
+
+async function submitOrder() {
+    const name = document.getElementById('oName').value.trim();
+    const phone = document.getElementById('oPhone').value.trim();
+    const email = document.getElementById('oEmail').value.trim();
+    const quantity = parseInt(document.getElementById('oQty').value);
+    const bankLast5 = document.getElementById('oBank').value.trim();
+    const hasPaid = document.getElementById('oPaid').checked;
+
+    if (!name || !phone || !email || !bankLast5) { showToast('請填寫所有必填欄位', 'error'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('請輸入有效的 Email', 'error'); return; }
+    if (!/^\d{5}$/.test(bankLast5)) { showToast('帳號末五碼須為5位數字', 'error'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '送出中...';
+
+    try {
+        const res = await fetch('/api/ticket-orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, email, ticketId, quantity, bankLast5, hasPaid })
+        });
+        if (res.ok) {
+            document.getElementById('orderPage').innerHTML = `
+                <div class="success-page">
+                    <h2>購票資料已送出！</h2>
+                    <p>我們確認收到您的匯款後，將寄送購票確認信至<br><strong>${esc(email)}</strong></p>
+                    <p>演出當日請出示該確認信入場。</p>
+                    <a href="/#tickets" class="back-btn">返回售票列表</a>
+                </div>`;
+        } else {
+            const d = await res.json();
+            showToast(d.error || '購票失敗，請稍後再試', 'error');
+            btn.disabled = false;
+            btn.textContent = '送出購票';
+        }
+    } catch {
+        showToast('網路錯誤，請稍後再試', 'error');
+        btn.disabled = false;
+        btn.textContent = '送出購票';
+    }
+}
+
+init();
+</script>
+</body>
+</html>

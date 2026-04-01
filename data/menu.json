@@ -1,0 +1,109 @@
+{
+  "categories": [
+    {
+      "id": "coffee",
+      "name": "咖啡",
+      "sections": [
+        {
+          "title": "Espresso",
+          "items": [
+            { "name": "濃縮咖啡 Espresso", "price": "$80", "desc": "" },
+            { "name": "美式咖啡 Americano", "price": "$100", "desc": "" },
+            { "name": "拿鐵 Latte", "price": "$130", "desc": "" },
+            { "name": "卡布奇諾 Cappuccino", "price": "$130", "desc": "" },
+            { "name": "摩卡 Mocha", "price": "$150", "desc": "" },
+            { "name": "焦糖瑪奇朵 Caramel Macchiato", "price": "$150", "desc": "" }
+          ]
+        },
+        {
+          "title": "手沖咖啡 Pour Over",
+          "items": [
+            { "name": "單品手沖", "price": "$180 起", "desc": "依當季豆款，請詢問店員" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "drinks",
+      "name": "飲品",
+      "sections": [
+        {
+          "title": "茶品 Tea",
+          "items": [
+            { "name": "伯爵紅茶 Earl Grey", "price": "$100", "desc": "" },
+            { "name": "蜜香烏龍 Honey Oolong", "price": "$120", "desc": "" },
+            { "name": "洋甘菊花茶 Chamomile", "price": "$110", "desc": "" }
+          ]
+        },
+        {
+          "title": "特調 Signature",
+          "items": [
+            { "name": "樂放氣泡特調", "price": "$140", "desc": "百香果 / 柚子 / 莓果（無酒精）" },
+            { "name": "季節限定特調", "price": "$150", "desc": "請詢問店員當季口味" },
+            { "name": "鮮榨果汁", "price": "$130", "desc": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "alcohol",
+      "name": "酒精飲品",
+      "sections": [
+        {
+          "title": "精釀啤酒 Craft Beer",
+          "items": [
+            { "name": "淡色艾爾 Pale Ale", "price": "$180", "desc": "台灣在地精釀" },
+            { "name": "IPA", "price": "$200", "desc": "" },
+            { "name": "黑麥啤酒 Stout", "price": "$200", "desc": "" }
+          ]
+        },
+        {
+          "title": "調酒 Cocktails",
+          "items": [
+            { "name": "Mojito", "price": "$250", "desc": "" },
+            { "name": "Old Fashioned", "price": "$280", "desc": "" },
+            { "name": "樂放特調調酒", "price": "$280", "desc": "每月更換，請詢問調酒師" }
+          ]
+        },
+        {
+          "title": "紅白酒 Wine",
+          "items": [
+            { "name": "紅酒（杯）", "price": "$200 起", "desc": "" },
+            { "name": "白酒（杯）", "price": "$200 起", "desc": "" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "name": "餐食",
+      "sections": [
+        {
+          "title": "輕食 Light Bites",
+          "items": [
+            { "name": "經典薯條 French Fries", "price": "$120", "desc": "" },
+            { "name": "起司拼盤 Cheese Platter", "price": "$280", "desc": "" },
+            { "name": "香烤雞翅", "price": "$180", "desc": "" },
+            { "name": "凱薩沙拉 Caesar Salad", "price": "$180", "desc": "" }
+          ]
+        },
+        {
+          "title": "主食 Mains",
+          "items": [
+            { "name": "經典漢堡 Classic Burger", "price": "$280", "desc": "附薯條 & 沙拉" },
+            { "name": "奶油培根義大利麵", "price": "$260", "desc": "" },
+            { "name": "燻鮭魚帕尼尼 Panini", "price": "$240", "desc": "" }
+          ]
+        },
+        {
+          "title": "甜點 Desserts",
+          "items": [
+            { "name": "巴斯克起司蛋糕", "price": "$150", "desc": "" },
+            { "name": "提拉米蘇 Tiramisu", "price": "$140", "desc": "" },
+            { "name": "每日手作甜點", "price": "$120 起", "desc": "請詢問店員" }
+          ]
+        }
+      ]
+    }
+  ]
+}

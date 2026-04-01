@@ -1,0 +1,16 @@
+[
+  {
+    "id": "menu1",
+    "filename": "menu-chinese.png",
+    "url": "/uploads/menu/menu-chinese.png",
+    "caption": "中文菜單",
+    "order": 0
+  },
+  {
+    "id": "menu2",
+    "filename": "menu-english.png",
+    "url": "/uploads/menu/menu-english.png",
+    "caption": "English Menu",
+    "order": 1
+  }
+]

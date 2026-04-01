@@ -1,0 +1,37 @@
+[
+  {
+    "id": "n1",
+    "date": "2026/03/28",
+    "tag": "公告",
+    "text": "四月份節目表已更新，歡迎查看！",
+    "link": "schedule"
+  },
+  {
+    "id": "n4",
+    "date": "2026/04/01",
+    "tag": "售票",
+    "text": "4/11（六）SKYLINE天際線樂團《從下課鐘到下班鐘》專場演出，熱烈售票中！",
+    "ticketId": "mnfygtuf53c6f1"
+  },
+  {
+    "id": "n5",
+    "date": "2026/04/01",
+    "tag": "售票",
+    "text": "4/18（六）張萍《想和你去吹吹風》專場演出，限量售票中！",
+    "ticketId": "mnfym72l5ee2e0"
+  },
+  {
+    "id": "n6",
+    "date": "2026/04/01",
+    "tag": "售票",
+    "text": "4/26（六）JING'S CHIMERA 近視奇美拉《ACG JAZZ》專場演出，火熱售票中！",
+    "ticketId": "mnfyrdza4f853e"
+  },
+  {
+    "id": "n7",
+    "date": "2026/04/01",
+    "tag": "售票",
+    "text": "7/4（六）FLYBAND《璀璨之愛》公益募款演唱會，門票 $1000 含梅酒一瓶！",
+    "ticketId": "mnfzcxvua94060"
+  }
+]
