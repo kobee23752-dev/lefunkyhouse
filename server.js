@@ -27,7 +27,7 @@ function genId() {
 
 // ─── Email Setup ───
 const OWNER_EMAIL = 'a0931223353@gmail.com';
-const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
+const SITE_URL = process.env.SITE_URL || 'https://lefunkyhouse-production.up.railway.app';
 
 function genConfirmToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
