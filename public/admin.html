@@ -202,6 +202,7 @@
         <a href="#" data-panel="menuEdit">&#127869; 菜單管理</a>
         <a href="#" data-panel="tickets">&#127915; 售票管理</a>
         <a href="#" data-panel="reservations">&#128221; 訂位管理</a>
+        <a href="#" data-panel="blockedDates">&#128683; 不可預約日期</a>
         <div class="sidebar-bottom">
             <a href="#" data-panel="settings">&#9881; 設定</a>
             <a href="#" onclick="logout()">&#128682; 登出</a>
@@ -305,6 +306,47 @@
                     <thead><tr><th>日期</th><th>時間</th><th>姓名</th><th>電話</th><th>Email</th><th>人數</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead>
                     <tbody id="resList"></tbody>
                 </table></div>
+            </div>
+        </div>
+
+        <!-- Blocked Dates -->
+        <div class="panel" id="panelBlockedDates">
+            <div class="page-title">不可預約日期管理 <button class="btn btn-primary btn-sm" onclick="openBlockedDateModal()">+ 新增</button></div>
+            <p style="color:var(--gray-600);margin-bottom:16px;font-size:.85rem">設定公休、包場、售票額滿等不可預約的日期或時段。週一、週二已自動設為公休。</p>
+            <div class="card">
+                <div class="table-wrap"><table>
+                    <thead><tr><th>日期</th><th>類型</th><th>原因</th><th>封鎖時段</th><th>操作</th></tr></thead>
+                    <tbody id="blockedDatesList"></tbody>
+                </table></div>
+            </div>
+        </div>
+
+        <!-- Blocked Date Modal -->
+        <div class="modal-overlay" id="blockedDateModalOverlay" onclick="if(event.target===this)closeBlockedDateModal()">
+            <div class="modal" style="max-width:480px">
+                <div class="modal-header">
+                    <h3 id="blockedDateModalTitle">新增不可預約日期</h3>
+                    <button class="modal-close" onclick="closeBlockedDateModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group"><label>日期 <span style="color:var(--red)">*</span></label><input class="input" type="date" id="bdDate"></div>
+                    <div class="form-group"><label>原因</label><input class="input" type="text" id="bdReason" placeholder="例如：包場、特殊公休、售票額滿"></div>
+                    <div class="form-group">
+                        <label>封鎖類型</label>
+                        <select class="input" id="bdType" onchange="toggleBlockedTimes()">
+                            <option value="allDay">整天不可預約</option>
+                            <option value="partial">封鎖特定時段</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="bdTimesGroup" style="display:none">
+                        <label>選擇要封鎖的時段（可多選）</label>
+                        <div id="bdTimesGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" onclick="closeBlockedDateModal()">取消</button>
+                    <button class="btn btn-primary" onclick="saveBlockedDate()">儲存</button>
+                </div>
             </div>
         </div>
 
@@ -541,7 +583,7 @@ function switchAdminPanel(panelName) {
     const panel = document.getElementById(id);
     if (panel) panel.classList.add('active');
     location.hash = panelName;
-    const loaders = { dashboard:loadDashboard, schedule:loadScheduleAdmin, news:loadNewsAdmin, artists:loadArtistsAdmin, gallery:loadGalleryAdmin, menuEdit:loadMenuAdmin, tickets:loadTicketsAdmin, reservations:loadResAdmin, settings:loadSmtpSettings };
+    const loaders = { dashboard:loadDashboard, schedule:loadScheduleAdmin, news:loadNewsAdmin, artists:loadArtistsAdmin, gallery:loadGalleryAdmin, menuEdit:loadMenuAdmin, tickets:loadTicketsAdmin, reservations:loadResAdmin, blockedDates:loadBlockedDates, settings:loadSmtpSettings };
     const fn = loaders[panelName];
     if (fn) fn();
 }
@@ -894,6 +936,131 @@ async function loadResAdmin() {
             </td>
         </tr>
     `).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--gray-500)">無訂位紀錄</td></tr>';
+}
+
+// ─── Blocked Dates ───
+let _editingBlockedId = null;
+
+async function loadBlockedDates() {
+    try {
+        const list = await (await fetch('/api/blocked-dates', { headers: authHeaders() })).json();
+        const tbody = document.getElementById('blockedDatesList');
+        if (!list.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-500)">尚未設定不可預約日期</td></tr>';
+            return;
+        }
+        tbody.innerHTML = list.sort((a,b) => a.date.localeCompare(b.date)).map(b => `
+            <tr>
+                <td>${esc(b.date)}</td>
+                <td>${b.allDay ? '整天封鎖' : '部分時段'}</td>
+                <td>${esc(b.reason || '-')}</td>
+                <td style="font-size:.8rem">${b.allDay ? '全天' : (b.blockedTimes||[]).join(', ')}</td>
+                <td>
+                    <button class="btn btn-sm" onclick='editBlockedDate(${JSON.stringify(b)})'>編輯</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteBlockedDate('${b.id}')">刪除</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(e) { console.error('loadBlockedDates error', e); }
+}
+
+function openBlockedDateModal(data) {
+    _editingBlockedId = data ? data.id : null;
+    document.getElementById('blockedDateModalTitle').textContent = data ? '編輯不可預約日期' : '新增不可預約日期';
+    document.getElementById('bdDate').value = data ? data.date : '';
+    document.getElementById('bdReason').value = data ? (data.reason || '') : '';
+    document.getElementById('bdType').value = (data && !data.allDay) ? 'partial' : 'allDay';
+    toggleBlockedTimes();
+    if (data && !data.allDay && data.blockedTimes) {
+        setTimeout(() => {
+            data.blockedTimes.forEach(t => {
+                const cb = document.querySelector(`#bdTimesGrid input[value="${t}"]`);
+                if (cb) cb.checked = true;
+            });
+        }, 50);
+    }
+    document.getElementById('blockedDateModalOverlay').style.display = 'flex';
+}
+
+function closeBlockedDateModal() {
+    document.getElementById('blockedDateModalOverlay').style.display = 'none';
+}
+
+function editBlockedDate(data) {
+    openBlockedDateModal(data);
+}
+
+function toggleBlockedTimes() {
+    const type = document.getElementById('bdType').value;
+    const group = document.getElementById('bdTimesGroup');
+    group.style.display = type === 'partial' ? 'block' : 'none';
+    if (type === 'partial') {
+        // 根據日期產生時段
+        const dateVal = document.getElementById('bdDate').value;
+        let slots = [];
+        if (dateVal) {
+            const d = new Date(dateVal + 'T00:00:00');
+            const dow = d.getDay();
+            const hours = { 0:['11:00','00:00'], 1:null, 2:null, 3:['14:00','22:00'], 4:['14:00','22:00'], 5:['14:00','22:00'], 6:['11:00','00:00'] };
+            const h = hours[dow];
+            if (h) {
+                const [oh, om] = h[0].split(':').map(Number);
+                let [ch, cm] = h[1].split(':').map(Number);
+                if (ch === 0 && cm === 0) { ch = 23; cm = 30; }
+                let t = oh * 60 + om;
+                const end = ch * 60 + cm;
+                while (t <= end) {
+                    const hh = String(Math.floor(t/60)).padStart(2,'0');
+                    const mm = String(t%60).padStart(2,'0');
+                    slots.push(`${hh}:${mm}`);
+                    t += 30;
+                }
+            }
+        }
+        if (!slots.length) slots = ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30'];
+        document.getElementById('bdTimesGrid').innerHTML = slots.map(s =>
+            `<label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer"><input type="checkbox" value="${s}"> ${s}</label>`
+        ).join('');
+    }
+}
+
+// 當日期改變時重新產生時段
+document.getElementById('bdDate').addEventListener('change', () => {
+    if (document.getElementById('bdType').value === 'partial') toggleBlockedTimes();
+});
+
+async function saveBlockedDate() {
+    const date = document.getElementById('bdDate').value;
+    const reason = document.getElementById('bdReason').value.trim();
+    const allDay = document.getElementById('bdType').value === 'allDay';
+    let blockedTimes = [];
+    if (!allDay) {
+        blockedTimes = Array.from(document.querySelectorAll('#bdTimesGrid input:checked')).map(cb => cb.value);
+        if (!blockedTimes.length) { toast('請至少選擇一個時段', 'error'); return; }
+    }
+    if (!date) { toast('請選擇日期', 'error'); return; }
+
+    const body = { date, reason, allDay, blockedTimes };
+    const url = _editingBlockedId ? `/api/blocked-dates/${_editingBlockedId}` : '/api/blocked-dates';
+    const method = _editingBlockedId ? 'PUT' : 'POST';
+    try {
+        const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(body) });
+        if (res.ok) {
+            toast(_editingBlockedId ? '已更新' : '已新增');
+            closeBlockedDateModal();
+            loadBlockedDates();
+        } else {
+            const d = await res.json();
+            toast(d.error || '儲存失敗', 'error');
+        }
+    } catch { toast('網路錯誤', 'error'); }
+}
+
+async function deleteBlockedDate(id) {
+    if (!confirm('確定要刪除？')) return;
+    await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE', headers: authHeaders() });
+    toast('已刪除');
+    loadBlockedDates();
 }
 
 // ─── SMTP Settings ───

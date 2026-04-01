@@ -464,13 +464,7 @@
                         <div class="fg"><label>日期 <span class="req">*</span></label><input type="date" id="rDate" required></div>
                         <div class="fg"><label>時間 <span class="req">*</span></label>
                             <select id="rTime" required>
-                                <option value="" disabled selected>選擇時段</option>
-                                <option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option>
-                                <option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option>
-                                <option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option>
-                                <option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option>
-                                <option>19:00</option><option>19:30</option><option>20:00</option><option>20:30</option>
-                                <option>21:00</option><option>21:30</option>
+                                <option value="" disabled selected>請先選擇日期</option>
                             </select>
                         </div>
                     </div>
@@ -745,6 +739,76 @@ function toggleFaq(btn) {
 
 /* ─── Reservation ─── */
 document.getElementById('rDate').setAttribute('min', new Date().toISOString().split('T')[0]);
+
+// 營業時間：0=Sun,1=Mon,...6=Sat
+const BUSINESS_HOURS = {
+    0: { open: '11:00', close: '00:00' }, // 週日
+    1: null, // 週一公休
+    2: null, // 週二公休
+    3: { open: '14:00', close: '22:00' }, // 週三
+    4: { open: '14:00', close: '22:00' }, // 週四
+    5: { open: '14:00', close: '22:00' }, // 週五
+    6: { open: '11:00', close: '00:00' }, // 週六
+};
+
+let _blockedDates = [];
+(async function loadBlockedDates() {
+    try { _blockedDates = await (await fetch('/api/blocked-dates')).json(); } catch {}
+})();
+
+function generateTimeSlots(openStr, closeStr) {
+    const slots = [];
+    const [oh, om] = openStr.split(':').map(Number);
+    let [ch, cm] = closeStr.split(':').map(Number);
+    if (ch === 0 && cm === 0) { ch = 23; cm = 30; } // 00:00 → 最後訂位 23:30
+    let t = oh * 60 + om;
+    const end = ch * 60 + cm;
+    while (t <= end) {
+        const hh = String(Math.floor(t / 60)).padStart(2, '0');
+        const mm = String(t % 60).padStart(2, '0');
+        slots.push(`${hh}:${mm}`);
+        t += 30;
+    }
+    return slots;
+}
+
+document.getElementById('rDate').addEventListener('change', function() {
+    const sel = document.getElementById('rTime');
+    sel.innerHTML = '<option value="" disabled selected>選擇時段</option>';
+    const val = this.value;
+    if (!val) return;
+    const d = new Date(val + 'T00:00:00');
+    const dow = d.getDay();
+    const hours = BUSINESS_HOURS[dow];
+
+    // 檢查是否公休
+    if (!hours) {
+        sel.innerHTML = '<option value="" disabled selected>當日公休，無法訂位</option>';
+        return;
+    }
+
+    // 檢查是否被封鎖（整天）
+    const blocked = _blockedDates.find(b => b.date === val);
+    if (blocked && blocked.allDay) {
+        sel.innerHTML = `<option value="" disabled selected>${blocked.reason || '當日不開放訂位'}</option>`;
+        return;
+    }
+
+    // 產生時段
+    const slots = generateTimeSlots(hours.open, hours.close);
+    const blockedTimes = blocked ? (blocked.blockedTimes || []) : [];
+
+    const available = slots.filter(s => !blockedTimes.includes(s));
+    if (!available.length) {
+        sel.innerHTML = '<option value="" disabled selected>當日時段已額滿</option>';
+        return;
+    }
+    available.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        sel.appendChild(opt);
+    });
+});
 
 document.getElementById('resForm').addEventListener('submit', async e => {
     e.preventDefault();

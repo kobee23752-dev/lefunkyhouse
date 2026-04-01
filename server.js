@@ -122,8 +122,8 @@ async function sendConfirmedEmail(reservation) {
             </table>
             <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
             <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-              📍 新北市淡水區中正路330號（老街台電正對面）<br>
-              📞 0931-223-353（王蝴蝶）<br>
+              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+              📞 0931-223-353（王小姐）<br>
               ⚠️ 逾時 15 分鐘未到將自動取消訂位
             </p>
           </div>
@@ -900,6 +900,45 @@ app.delete('/api/reservations/:id', authMiddleware, (req, res) => {
   let list = readJSON('reservations.json');
   list = list.filter(r => r.id !== req.params.id);
   writeJSON('reservations.json', list);
+  res.json({ ok: true });
+});
+
+// ═══════════════════════════════════════
+//  Blocked Dates (不可預約日期)
+// ═══════════════════════════════════════
+// blocked-dates.json format: [{ id, date: "2026-04-15", reason: "包場", allDay: true, blockedTimes: [] }]
+app.get('/api/blocked-dates', (req, res) => {
+  const list = readJSON('blocked-dates.json');
+  res.json(list);
+});
+
+app.post('/api/blocked-dates', authMiddleware, (req, res) => {
+  const { date, reason, allDay, blockedTimes } = req.body;
+  if (!date) return res.status(400).json({ error: '請選擇日期' });
+  const list = readJSON('blocked-dates.json');
+  const item = { id: genId(), date, reason: reason || '', allDay: allDay !== false, blockedTimes: blockedTimes || [] };
+  list.push(item);
+  writeJSON('blocked-dates.json', list);
+  res.json(item);
+});
+
+app.put('/api/blocked-dates/:id', authMiddleware, (req, res) => {
+  const list = readJSON('blocked-dates.json');
+  const idx = list.findIndex(b => b.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: '找不到' });
+  const { date, reason, allDay, blockedTimes } = req.body;
+  if (date) list[idx].date = date;
+  if (reason !== undefined) list[idx].reason = reason;
+  if (allDay !== undefined) list[idx].allDay = allDay;
+  if (blockedTimes !== undefined) list[idx].blockedTimes = blockedTimes;
+  writeJSON('blocked-dates.json', list);
+  res.json(list[idx]);
+});
+
+app.delete('/api/blocked-dates/:id', authMiddleware, (req, res) => {
+  let list = readJSON('blocked-dates.json');
+  list = list.filter(b => b.id !== req.params.id);
+  writeJSON('blocked-dates.json', list);
   res.json({ ok: true });
 });
 
