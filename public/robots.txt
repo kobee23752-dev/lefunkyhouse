@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lefunkyhouse-production.up.railway.app/sitemap.xml
