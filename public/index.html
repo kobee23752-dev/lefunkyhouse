@@ -260,8 +260,23 @@
         .tickets-month-section{margin-bottom:28px}
         .tickets-month-title{display:inline-block;font-size:.9rem;font-weight:500;color:var(--text-secondary);background:rgba(30,45,61,.06);padding:4px 14px;border-radius:20px;margin-bottom:10px}
         .tickets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;align-items:stretch}
-        .ticket-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .3s;display:flex;flex-direction:column}
+        .ticket-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .3s;display:flex;flex-direction:column;cursor:pointer}
         .ticket-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.07)}
+        .ticket-modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;justify-content:center;align-items:center;padding:20px}
+        .ticket-modal-overlay.active{display:flex}
+        .ticket-modal{background:#fff;border-radius:14px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+        .ticket-modal-close{position:absolute;top:12px;right:14px;width:36px;height:36px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;font-size:1.2rem;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center}
+        .ticket-modal-poster{width:100%;cursor:pointer}
+        .ticket-modal-poster img{width:100%;display:block;border-radius:14px 14px 0 0}
+        .ticket-modal-body{padding:20px}
+        .ticket-modal-body .ticket-title{font-size:1.2rem;margin-bottom:6px}
+        .ticket-modal-body .ticket-date{font-size:.9rem;margin-bottom:12px}
+        .ticket-modal-body .ticket-desc{font-size:.92rem;margin-bottom:16px;white-space:pre-line}
+        .ticket-modal-body .ticket-price{font-size:1.3rem;margin-bottom:6px}
+        .ticket-modal-body .btn-ticket{display:block;text-align:center;padding:14px;font-size:1rem;margin-top:16px;border-radius:8px}
+        .poster-fullscreen{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:10000;justify-content:center;align-items:center;cursor:pointer}
+        .poster-fullscreen.active{display:flex}
+        .poster-fullscreen img{max-width:95%;max-height:95%;object-fit:contain}
         .ticket-poster{width:100%;height:260px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-muted);font-size:1.5rem}
         .ticket-poster img{width:100%;height:100%;object-fit:cover}
         .ticket-body{padding:12px;flex:1;display:flex;flex-direction:column}
@@ -544,6 +559,18 @@
         </p>
         <div class="tickets-grid" id="ticketsContainer">載入中...</div>
     </section>
+
+    <!-- Ticket Detail Modal -->
+    <div class="ticket-modal-overlay" id="ticketModal">
+        <div class="ticket-modal">
+            <button class="ticket-modal-close" onclick="closeTicketModal()">&times;</button>
+            <div class="ticket-modal-poster" id="modalPoster"></div>
+            <div class="ticket-modal-body" id="modalBody"></div>
+        </div>
+    </div>
+    <div class="poster-fullscreen" id="posterFullscreen" onclick="this.classList.remove('active')">
+        <img id="posterFullImg" src="" alt="">
+    </div>
 
     <!-- ═══ Reservation ═══ -->
     <section id="reservation" class="sec">
@@ -963,17 +990,15 @@ async function loadTickets() {
             if (!grouped[key]) grouped[key] = { label: `${y} 年 ${monthNames[parseInt(m)-1]}`, tickets: [] };
             grouped[key].tickets.push(t);
         });
+        var ticketDataCache = [];
         function renderCard(t) {
             const soldOut = t.soldOut;
             const remaining = t.remaining;
             const totalTickets = t.totalTickets || 0;
             const remainingText = totalTickets > 0 ? `剩餘 ${remaining} 張` : '';
             const lowStock = totalTickets > 0 && remaining > 0 && remaining <= 10;
-            const maxQty = Math.min(10, remaining || 10);
-            const qtyOptions = maxQty > 0 ? Array.from({length: maxQty}, (_, i) => `<option value="${i+1}">${i+1}</option>`).join('') : '';
-            const deadlineText = t.paymentDeadline ? t.paymentDeadline.replace(/-/g, '/') : '';
             return `
-            <div class="ticket-card">
+            <div class="ticket-card" onclick="openTicketModal('${t.id}')">
                 <div class="ticket-poster">
                     ${t.poster ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}">` : '&#127926;'}
                 </div>
@@ -981,7 +1006,6 @@ async function loadTickets() {
                     ${t.artist ? `<div class="ticket-title">${esc(t.artist)}</div>` : ''}
                     <div class="ticket-title">${esc(t.title)}</div>
                     <div class="ticket-date">&#128197; ${esc(t.date.replace(/-/g,'/'))}　${esc(t.time)}</div>
-                    ${t.description ? `<p class="ticket-desc">${esc(t.description)}</p>` : ''}
                     <div class="ticket-footer">
                         <div>
                             <div class="ticket-price">$${esc(String(t.price))} <span>/ 人</span></div>
@@ -989,7 +1013,7 @@ async function loadTickets() {
                         </div>
                         ${soldOut
                             ? '<span class="btn-ticket sold-out">已售完</span>'
-                            : `<a class="btn-ticket" href="/order.html?id=${t.id}">我要購票</a>`
+                            : `<a class="btn-ticket" href="/order.html?id=${t.id}" onclick="event.stopPropagation()">我要購票</a>`
                         }
                     </div>
                 </div>
@@ -1001,9 +1025,52 @@ async function loadTickets() {
             html += `<div class="tickets-month-section"><div class="tickets-month-title">${g.label}</div><div class="tickets-grid">${g.tickets.map(renderCard).join('')}</div></div>`;
         });
         c.innerHTML = html;
+        ticketDataCache = upcoming;
     } catch { document.getElementById('ticketsContainer').innerHTML = '<div class="tickets-empty">目前沒有售票演出</div>'; }
 }
 
+function openTicketModal(id) {
+    const t = ticketDataCache.find(x => x.id === id);
+    if (!t) return;
+    const soldOut = t.soldOut;
+    const remaining = t.remaining;
+    const totalTickets = t.totalTickets || 0;
+    const remainingText = totalTickets > 0 ? `剩餘 ${remaining} 張` : '';
+    const lowStock = totalTickets > 0 && remaining > 0 && remaining <= 10;
+    document.getElementById('modalPoster').innerHTML = t.poster
+        ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}" onclick="openPosterFull('${esc(t.poster)}')">`
+        : '';
+    document.getElementById('modalBody').innerHTML = `
+        ${t.artist ? `<div class="ticket-title" style="font-size:1rem;color:var(--sage)">${esc(t.artist)}</div>` : ''}
+        <div class="ticket-title">${esc(t.title)}</div>
+        <div class="ticket-date">&#128197; ${esc(t.date.replace(/-/g,'/'))}　${esc(t.time)}</div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+        ${t.description ? `<p class="ticket-desc">${esc(t.description)}</p>` : '<p class="ticket-desc" style="color:var(--text-muted)">暫無演出介紹</p>'}
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div>
+                <div class="ticket-price">$${esc(String(t.price))} <span>/ 人</span></div>
+                ${totalTickets > 0 ? `<div class="ticket-remaining${lowStock ? ' low' : ''}">${remainingText}</div>` : ''}
+            </div>
+        </div>
+        ${soldOut
+            ? '<span class="btn-ticket sold-out" style="display:block;text-align:center;padding:14px;margin-top:16px">已售完</span>'
+            : `<a class="btn-ticket" href="/order.html?id=${t.id}" style="display:block;text-align:center;padding:14px;font-size:1rem;margin-top:16px;border-radius:8px">我要購票</a>`
+        }
+    `;
+    document.getElementById('ticketModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeTicketModal() {
+    document.getElementById('ticketModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+function openPosterFull(src) {
+    document.getElementById('posterFullImg').src = src;
+    document.getElementById('posterFullscreen').classList.add('active');
+}
+document.getElementById('ticketModal').addEventListener('click', function(e) {
+    if (e.target === this) closeTicketModal();
+});
 
 /* ─── Init ─── */
 loadNews();
