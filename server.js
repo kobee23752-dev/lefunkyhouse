@@ -593,7 +593,7 @@ app.get('/api/tickets', (req, res) => {
 });
 
 app.post('/api/tickets', authMiddleware, uploadTicketPoster.single('poster'), (req, res) => {
-  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline } = req.body;
+  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline, posterPosition } = req.body;
   if (!title || !date) return res.status(400).json({ error: '請填寫演出名稱和日期' });
   const tickets = readJSON('tickets.json');
   const item = {
@@ -604,6 +604,7 @@ app.post('/api/tickets', authMiddleware, uploadTicketPoster.single('poster'), (r
     description: description || '',
     venue: '樂放音樂展演空間',
     poster: req.file ? `/uploads/tickets/${req.file.filename}` : '',
+    posterPosition: posterPosition || 'center',
     totalTickets: parseInt(totalTickets) || 0,
     manualRemaining: manualRemaining !== '' && manualRemaining !== undefined ? parseInt(manualRemaining) : null,
     paymentDeadline: paymentDeadline || '',
@@ -620,7 +621,7 @@ app.put('/api/tickets/:id', authMiddleware, uploadTicketPoster.single('poster'),
   const tickets = readJSON('tickets.json');
   const idx = tickets.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: '找不到' });
-  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline, status } = req.body;
+  const { title, date, time, price, description, artist, totalTickets, manualRemaining, paymentDeadline, posterPosition, status } = req.body;
   if (title !== undefined) tickets[idx].title = title;
   if (date !== undefined) tickets[idx].date = date;
   if (time !== undefined) tickets[idx].time = time;
@@ -630,6 +631,7 @@ app.put('/api/tickets/:id', authMiddleware, uploadTicketPoster.single('poster'),
   if (totalTickets !== undefined) tickets[idx].totalTickets = parseInt(totalTickets) || 0;
   if (manualRemaining !== undefined) tickets[idx].manualRemaining = manualRemaining !== '' ? parseInt(manualRemaining) : null;
   if (paymentDeadline !== undefined) tickets[idx].paymentDeadline = paymentDeadline;
+  if (posterPosition !== undefined) tickets[idx].posterPosition = posterPosition;
   if (status !== undefined) tickets[idx].status = status;
   if (req.file) {
     if (tickets[idx].poster) {

@@ -471,6 +471,15 @@
             <input type="file" accept="image/*" id="ticketPosterInput" style="position:absolute;left:-9999px">
             <div id="ticketPosterPreview" style="margin-top:8px"></div>
         </div>
+        <div class="form-group"><label>海報顯示位置</label>
+            <select class="input" id="ticketPosterPosition">
+                <option value="center">置中（預設）</option>
+                <option value="top">靠上（顯示海報上半部）</option>
+                <option value="bottom">靠下（顯示海報下半部）</option>
+                <option value="center top">偏上</option>
+                <option value="center bottom">偏下</option>
+            </select>
+        </div>
         <div class="modal-actions">
             <button class="btn btn-outline" onclick="closeModal('ticketModal')">取消</button>
             <button class="btn btn-primary" onclick="saveTicket()">儲存</button>
@@ -1161,6 +1170,7 @@ function openTicketModal(item) {
     document.getElementById('ticketTotalTickets').value = item?.totalTickets || '';
     document.getElementById('ticketManualRemaining').value = item?.manualRemaining ?? '';
     document.getElementById('ticketPaymentDeadline').value = item?.paymentDeadline || '';
+    document.getElementById('ticketPosterPosition').value = item?.posterPosition || 'center';
     document.getElementById('ticketPosterInput').value = '';
     document.getElementById('ticketPosterPreview').innerHTML = item?.poster ? `<img src="${item.poster}" style="max-width:200px;border-radius:6px">` : '';
     document.getElementById('ticketModal').classList.add('open');
@@ -1189,6 +1199,7 @@ async function saveTicket() {
         fd.append('totalTickets', document.getElementById('ticketTotalTickets').value || '0');
         fd.append('manualRemaining', document.getElementById('ticketManualRemaining').value);
         fd.append('paymentDeadline', document.getElementById('ticketPaymentDeadline').value);
+        fd.append('posterPosition', document.getElementById('ticketPosterPosition').value);
         const file = document.getElementById('ticketPosterInput').files[0];
         if (file) fd.append('poster', file);
 
