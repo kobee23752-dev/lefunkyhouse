@@ -582,8 +582,20 @@ app.get('/api/tickets', (req, res) => {
   // Calculate remaining for each ticket
   const ticketsWithRemaining = tickets.map(t => {
     const totalTickets = t.totalTickets || 0;
-    const soldQty = orders.filter(o => o.ticketId === t.id && o.status === 'confirmed').reduce((sum, o) => sum + (o.quantity || 0), 0);
-    const remaining = Math.max(0, totalTickets - soldQty);
+    let remaining;
+    let soldQty;
+    if (t.manualRemaining !== null && t.manualRemaining !== undefined) {
+      // 有手動設定：以手動數字為基底，再扣掉設定之後確認的線上訂單
+      const setAt = t.manualRemainingSetAt || '2000-01-01';
+      const newConfirmed = orders.filter(o => o.ticketId === t.id && o.status === 'confirmed' && o.confirmedAt && o.confirmedAt > setAt)
+        .reduce((sum, o) => sum + (o.quantity || 0), 0);
+      remaining = Math.max(0, t.manualRemaining - newConfirmed);
+      soldQty = totalTickets - remaining;
+    } else {
+      // 沒手動設定：用總票數減全部已確認訂單
+      soldQty = orders.filter(o => o.ticketId === t.id && o.status === 'confirmed').reduce((sum, o) => sum + (o.quantity || 0), 0);
+      remaining = Math.max(0, totalTickets - soldQty);
+    }
     return { ...t, remaining, soldQty, soldOut: totalTickets > 0 && remaining <= 0 };
   });
   if (isAdmin) return res.json(ticketsWithRemaining);
@@ -629,7 +641,16 @@ app.put('/api/tickets/:id', authMiddleware, uploadTicketPoster.single('poster'),
   if (description !== undefined) tickets[idx].description = description;
   if (artist !== undefined) tickets[idx].artist = artist;
   if (totalTickets !== undefined) tickets[idx].totalTickets = parseInt(totalTickets) || 0;
-  if (manualRemaining !== undefined) tickets[idx].manualRemaining = manualRemaining !== '' ? parseInt(manualRemaining) : null;
+  if (manualRemaining !== undefined) {
+    const newVal = manualRemaining !== '' ? parseInt(manualRemaining) : null;
+    if (newVal !== null && newVal !== tickets[idx].manualRemaining) {
+      tickets[idx].manualRemaining = newVal;
+      tickets[idx].manualRemainingSetAt = new Date().toISOString();
+    } else if (newVal === null) {
+      tickets[idx].manualRemaining = null;
+      tickets[idx].manualRemainingSetAt = null;
+    }
+  }
   if (paymentDeadline !== undefined) tickets[idx].paymentDeadline = paymentDeadline;
   if (posterPosition !== undefined) tickets[idx].posterPosition = posterPosition;
   if (status !== undefined) tickets[idx].status = status;
@@ -769,6 +790,7 @@ app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
   if (orders[idx].status === 'confirmed') return res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>此購票已確認過囉！</h2><p>確認信已寄出給客人。</p></body></html>');
   orders[idx].status = 'confirmed';
   orders[idx].hasPaid = true;
+  orders[idx].confirmedAt = new Date().toISOString();
   writeJSON('ticket-orders.json', orders);
   // Send confirmation email to buyer
   if (orders[idx].email) {
