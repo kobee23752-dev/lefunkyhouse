@@ -582,14 +582,9 @@ app.get('/api/tickets', (req, res) => {
   // Calculate remaining for each ticket
   const ticketsWithRemaining = tickets.map(t => {
     const totalTickets = t.totalTickets || 0;
-    let remaining;
-    if (t.manualRemaining !== null && t.manualRemaining !== undefined) {
-      remaining = t.manualRemaining;
-    } else {
-      const soldQty = orders.filter(o => o.ticketId === t.id && o.status !== 'cancelled').reduce((sum, o) => sum + (o.quantity || 0), 0);
-      remaining = Math.max(0, totalTickets - soldQty);
-    }
-    return { ...t, remaining, soldOut: totalTickets > 0 && remaining <= 0 };
+    const soldQty = orders.filter(o => o.ticketId === t.id && o.status !== 'cancelled').reduce((sum, o) => sum + (o.quantity || 0), 0);
+    const remaining = Math.max(0, totalTickets - soldQty);
+    return { ...t, remaining, soldQty, soldOut: totalTickets > 0 && remaining <= 0 };
   });
   if (isAdmin) return res.json(ticketsWithRemaining);
   // Public: only on_sale and upcoming
