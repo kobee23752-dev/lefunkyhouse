@@ -52,14 +52,41 @@ function genConfirmToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
 }
 
-// ─── Resend Email API（HTTPS，不受 SMTP 封鎖影響）───
+// ─── Email 寄信系統 ───
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const GMAIL_WEBHOOK_URL = process.env.GMAIL_WEBHOOK_URL || '';
+const GMAIL_WEBHOOK_SECRET = 'lefunky-email-2024';
 
 async function sendEmail({ to, subject, html, from }) {
-  const fromAddr = from || '"樂放音樂展演空間" <onboarding@resend.dev>';
+  // 方法 1（推薦）：Google Apps Script Webhook（免費，可寄給任何人）
+  if (GMAIL_WEBHOOK_URL) {
+    console.log(`[Gmail Webhook] 寄信給 ${to}，主旨: ${subject}`);
+    try {
+      const resp = await fetch(GMAIL_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: GMAIL_WEBHOOK_SECRET, to, subject, html }),
+        redirect: 'follow'
+      });
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      if (data.ok) {
+        console.log('[Gmail Webhook] 寄信成功:', to);
+        return true;
+      } else {
+        console.error('[Gmail Webhook] 寄信失敗:', data);
+        // fallback 到 Resend
+      }
+    } catch (e) {
+      console.error('[Gmail Webhook] 錯誤:', e.message);
+      // fallback 到 Resend
+    }
+  }
 
-  // 方法 1：使用 Resend API（推薦，HTTPS 不會被封鎖）
+  // 方法 2：Resend API（只能寄給註冊帳號信箱）
   if (RESEND_API_KEY) {
+    const fromAddr = from || '"樂放音樂展演空間" <onboarding@resend.dev>';
     console.log(`[Resend] 寄信給 ${to}，主旨: ${subject}`);
     try {
       const resp = await fetch('https://api.resend.com/emails', {
@@ -83,11 +110,11 @@ async function sendEmail({ to, subject, html, from }) {
     }
   }
 
-  // 方法 2：fallback 用 nodemailer SMTP（本地開發用）
+  // 方法 3：fallback 用 nodemailer SMTP（本地開發用）
   const settings = readJSON('settings.json');
   const smtp = settings.smtp || null;
   if (!smtp || !smtp.user || !smtp.pass) {
-    console.log('未設定 RESEND_API_KEY 也無 SMTP 設定，跳過寄信');
+    console.log('未設定寄信方式，跳過寄信');
     return false;
   }
   try {
@@ -1051,10 +1078,13 @@ app.listen(PORT, async () => {
   console.log(`   OWNER_EMAIL: ${OWNER_EMAIL}`);
 
   // 檢查 Email 設定
+  if (GMAIL_WEBHOOK_URL) {
+    console.log('✅ Gmail Webhook 已設定，Email 通知已啟用（可寄給任何人）');
+  }
   if (RESEND_API_KEY) {
-    console.log('✅ Resend API Key 已設定，Email 通知已啟用（HTTPS）');
-  } else {
-    console.log('⚠️  未設定 RESEND_API_KEY，將嘗試用 SMTP 寄信（雲端平台可能無法使用）');
-    console.log('   請到 resend.com 申請免費 API Key，並設定 Railway 環境變數 RESEND_API_KEY');
+    console.log('✅ Resend API Key 已設定（備用寄信管道）');
+  }
+  if (!GMAIL_WEBHOOK_URL && !RESEND_API_KEY) {
+    console.log('⚠️  未設定寄信方式，請設定 GMAIL_WEBHOOK_URL 或 RESEND_API_KEY');
   }
 });
