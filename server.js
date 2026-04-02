@@ -52,130 +52,141 @@ function genConfirmToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
 }
 
-// 預設 SMTP 設定（避免 settings.json 遺失時無法寄信）
-const DEFAULT_SMTP = {
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  user: 'a0931223353@gmail.com',
-  pass: 'dwed purn zelt ypqh'
-};
+// ─── Resend Email API（HTTPS，不受 SMTP 封鎖影響）───
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 
-function getEmailSettings() {
+async function sendEmail({ to, subject, html, from }) {
+  const fromAddr = from || '"樂放音樂展演空間" <onboarding@resend.dev>';
+
+  // 方法 1：使用 Resend API（推薦，HTTPS 不會被封鎖）
+  if (RESEND_API_KEY) {
+    console.log(`[Resend] 寄信給 ${to}，主旨: ${subject}`);
+    try {
+      const resp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ from: fromAddr, to: [to], subject, html })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        console.error('[Resend] 寄信失敗:', data);
+        return false;
+      }
+      console.log('[Resend] 寄信成功:', data.id);
+      return true;
+    } catch (e) {
+      console.error('[Resend] 寄信錯誤:', e.message);
+      return false;
+    }
+  }
+
+  // 方法 2：fallback 用 nodemailer SMTP（本地開發用）
   const settings = readJSON('settings.json');
   const smtp = settings.smtp || null;
-  // 如果 settings.json 沒有 SMTP 設定，使用預設值
-  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) {
-    console.log('settings.json 無 SMTP 設定，使用預設值');
-    return DEFAULT_SMTP;
+  if (!smtp || !smtp.user || !smtp.pass) {
+    console.log('未設定 RESEND_API_KEY 也無 SMTP 設定，跳過寄信');
+    return false;
   }
-  return smtp;
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtp.host || 'smtp.gmail.com',
+      port: smtp.port || 465,
+      secure: smtp.secure !== undefined ? smtp.secure : true,
+      auth: { user: smtp.user, pass: smtp.pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    });
+    await transporter.sendMail({
+      from: `"樂放音樂展演空間" <${smtp.user}>`,
+      to, subject, html
+    });
+    console.log('[SMTP] 寄信成功:', to);
+    return true;
+  } catch (e) {
+    console.error('[SMTP] 寄信失敗:', e.message);
+    return false;
+  }
 }
 
-function createTransporter() {
-  const smtp = getEmailSettings();
-  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) {
-    console.error('SMTP 設定不完整，無法建立 transporter');
-    return null;
-  }
-  console.log('建立 SMTP transporter:', smtp.host, smtp.user);
-  return nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port || 587,
-    secure: smtp.secure || false,
-    auth: { user: smtp.user, pass: smtp.pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
-  });
+// 相容舊的 createTransporter / getEmailSettings
+function getEmailSettings() {
+  const settings = readJSON('settings.json');
+  return settings.smtp || { host: 'smtp.gmail.com', port: 465, secure: true, user: 'a0931223353@gmail.com', pass: '' };
 }
+function createTransporter() { return null; } // 已改用 sendEmail()
 
 async function sendReservationEmails(reservation) {
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.log('SMTP 未設定，跳過寄信。訂位資料:', reservation.name, reservation.date, reservation.time);
-    return;
-  }
-  const smtp = getEmailSettings();
   const dateStr = reservation.date;
   const timeStr = reservation.time;
 
   // 寄給老闆娘的通知信（含確認按鈕）
   const confirmToken = genConfirmToken(reservation.id);
   const confirmUrl = `${SITE_URL}/api/reservations/${reservation.id}/confirm?token=${confirmToken}`;
-  try {
-    await transporter.sendMail({
-      from: `"樂放訂位系統" <${smtp.user}>`,
-      to: OWNER_EMAIL,
-      subject: `【新訂位通知】${reservation.name} - ${dateStr} ${timeStr} (${reservation.guests}位)`,
-      html: `
-        <div style="font-family:sans-serif;max-width:500px;padding:20px">
-          <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新訂位通知</h2>
-          <table style="font-size:14px;line-height:2">
-            <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${reservation.name}</strong></td></tr>
-            <tr><td style="color:#888">電話</td><td>${reservation.phone}</td></tr>
-            <tr><td style="color:#888">Email</td><td>${reservation.email || '(未提供)'}</td></tr>
-            <tr><td style="color:#888">日期</td><td>${dateStr}</td></tr>
-            <tr><td style="color:#888">時間</td><td>${timeStr}</td></tr>
-            <tr><td style="color:#888">人數</td><td>${reservation.guests} 位</td></tr>
-            ${reservation.note ? `<tr><td style="color:#888">備註</td><td>${reservation.note}</td></tr>` : ''}
-          </table>
-          <div style="margin-top:24px;text-align:center">
-            <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此訂位</a>
-          </div>
-          <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動更新訂位狀態${reservation.email ? '，並寄送確認信給客人' : ''}</p>
-          <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+
+  const ok = await sendEmail({
+    to: OWNER_EMAIL,
+    subject: `【新訂位通知】${reservation.name} - ${dateStr} ${timeStr} (${reservation.guests}位)`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;padding:20px">
+        <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新訂位通知</h2>
+        <table style="font-size:14px;line-height:2">
+          <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${reservation.name}</strong></td></tr>
+          <tr><td style="color:#888">電話</td><td>${reservation.phone}</td></tr>
+          <tr><td style="color:#888">Email</td><td>${reservation.email || '(未提供)'}</td></tr>
+          <tr><td style="color:#888">日期</td><td>${dateStr}</td></tr>
+          <tr><td style="color:#888">時間</td><td>${timeStr}</td></tr>
+          <tr><td style="color:#888">人數</td><td>${reservation.guests} 位</td></tr>
+          ${reservation.note ? `<tr><td style="color:#888">備註</td><td>${reservation.note}</td></tr>` : ''}
+        </table>
+        <div style="margin-top:24px;text-align:center">
+          <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此訂位</a>
         </div>
-      `
-    });
-    console.log('已寄送訂位通知信給老闆娘');
-  } catch (e) {
-    console.error('寄送老闆娘通知信失敗:', e.message);
-  }
+        <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動更新訂位狀態${reservation.email ? '，並寄送確認信給客人' : ''}</p>
+        <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+      </div>
+    `
+  });
+  if (ok) console.log('已寄送訂位通知信給老闆娘');
 }
 
 // ─── 確認訂位通知信（寄給客人）───
 async function sendConfirmedEmail(reservation) {
-  const transporter = createTransporter();
-  if (!transporter || !reservation.email) return;
-  const smtp = getEmailSettings();
-  try {
-    await transporter.sendMail({
-      from: `"樂放音樂展演空間" <${smtp.user}>`,
-      to: reservation.email,
-      subject: `【樂放音樂展演空間】您的訂位已確認 - ${reservation.date} ${reservation.time}`,
-      html: `
-        <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
-          <div style="text-align:center;margin-bottom:24px">
-            <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
-            <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
-          </div>
-          <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
-            <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 訂位已確認</h2>
-            <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
-              ${reservation.name} 您好，<br>
-              您的訂位已確認成功，我們期待您的光臨！
-            </p>
-            <table style="width:100%;border-collapse:collapse;font-size:14px">
-              <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">日期</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.date}</td></tr>
-              <tr><td style="padding:8px 0;color:#6a7a8a">時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.time}</td></tr>
-              <tr><td style="padding:8px 0;color:#6a7a8a">人數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.guests} 位</td></tr>
-            </table>
-            <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
-            <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
-              📞 0931-223-353（王小姐）<br>
-              ⚠️ 逾時 15 分鐘未到將自動取消訂位
-            </p>
-          </div>
-          <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+  if (!reservation.email) return;
+  await sendEmail({
+    to: reservation.email,
+    subject: `【樂放音樂展演空間】您的訂位已確認 - ${reservation.date} ${reservation.time}`,
+    html: `
+      <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
+        <div style="text-align:center;margin-bottom:24px">
+          <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
+          <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
         </div>
-      `
-    });
-    console.log('已寄送訂位確認信給客人:', reservation.email);
-  } catch (e) {
-    console.error('寄送確認信失敗:', e.message);
-  }
+        <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
+          <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 訂位已確認</h2>
+          <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
+            ${reservation.name} 您好，<br>
+            您的訂位已確認成功，我們期待您的光臨！
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">日期</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.date}</td></tr>
+            <tr><td style="padding:8px 0;color:#6a7a8a">時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.time}</td></tr>
+            <tr><td style="padding:8px 0;color:#6a7a8a">人數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.guests} 位</td></tr>
+          </table>
+          <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
+          <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
+            📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+            📞 0931-223-353（王小姐）<br>
+            ⚠️ 逾時 15 分鐘未到將自動取消訂位
+          </p>
+        </div>
+        <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+      </div>
+    `
+  });
 }
 
 // ─── Middleware ───
@@ -667,39 +678,33 @@ app.post('/api/ticket-orders', async (req, res) => {
   // 背景寄信通知老闆娘
   (async () => {
     try {
-      const transporter = createTransporter();
-      if (transporter) {
-        const smtp = getEmailSettings();
-        const confirmToken = genConfirmToken(order.id);
-        const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
-        const artistText = ticket.artist ? `${ticket.artist} - ` : '';
-        await transporter.sendMail({
-          from: `"樂放購票系統" <${smtp.user}>`,
-          to: OWNER_EMAIL,
-          subject: `【新購票通知】${order.name} - ${artistText}${ticket.title} (${order.quantity}張)`,
-          html: `
-            <div style="font-family:sans-serif;max-width:500px;padding:20px">
-              <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新購票通知</h2>
-              <table style="font-size:14px;line-height:2">
-                <tr><td style="color:#888;padding-right:16px">演出場次</td><td><strong>${artistText}${ticket.title}</strong></td></tr>
-                <tr><td style="color:#888">演出日期</td><td>${ticket.date} ${ticket.time}</td></tr>
-                <tr><td style="color:#888">姓名</td><td>${order.name}</td></tr>
-                <tr><td style="color:#888">電話</td><td>${order.phone}</td></tr>
-                <tr><td style="color:#888">Email</td><td>${order.email}</td></tr>
-                <tr><td style="color:#888">票數</td><td>${order.quantity} 張</td></tr>
-                <tr><td style="color:#888">帳號末五碼</td><td>${order.bankLast5}</td></tr>
-                <tr><td style="color:#888">已匯款</td><td>${order.hasPaid ? '是' : '否'}</td></tr>
-              </table>
-              <div style="margin-top:24px;text-align:center">
-                <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
-              </div>
-              <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
-              <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+      const confirmToken = genConfirmToken(order.id);
+      const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
+      const artistText = ticket.artist ? `${ticket.artist} - ` : '';
+      await sendEmail({
+        to: OWNER_EMAIL,
+        subject: `【新購票通知】${order.name} - ${artistText}${ticket.title} (${order.quantity}張)`,
+        html: `
+          <div style="font-family:sans-serif;max-width:500px;padding:20px">
+            <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">新購票通知</h2>
+            <table style="font-size:14px;line-height:2">
+              <tr><td style="color:#888;padding-right:16px">演出場次</td><td><strong>${artistText}${ticket.title}</strong></td></tr>
+              <tr><td style="color:#888">演出日期</td><td>${ticket.date} ${ticket.time}</td></tr>
+              <tr><td style="color:#888">姓名</td><td>${order.name}</td></tr>
+              <tr><td style="color:#888">電話</td><td>${order.phone}</td></tr>
+              <tr><td style="color:#888">Email</td><td>${order.email}</td></tr>
+              <tr><td style="color:#888">票數</td><td>${order.quantity} 張</td></tr>
+              <tr><td style="color:#888">帳號末五碼</td><td>${order.bankLast5}</td></tr>
+              <tr><td style="color:#888">已匯款</td><td>${order.hasPaid ? '是' : '否'}</td></tr>
+            </table>
+            <div style="margin-top:24px;text-align:center">
+              <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
             </div>
+            <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
+            <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
+          </div>
           `
-        });
-        console.log('已寄送購票通知信給老闆娘');
-      }
+      });
     } catch (e) {
       console.error('寄送購票通知信失敗:', e.message);
     }
@@ -742,51 +747,43 @@ app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
   orders[idx].hasPaid = true;
   writeJSON('ticket-orders.json', orders);
   // Send confirmation email to buyer
-  try {
-    const transporter = createTransporter();
-    if (transporter && orders[idx].email) {
-      const smtp = getEmailSettings();
-      const tickets = readJSON('tickets.json');
-      const ticket = tickets.find(t => t.id === orders[idx].ticketId);
-      const artistText = ticket?.artist ? `${ticket.artist} - ` : '';
-      const showTitle = ticket ? `${artistText}${ticket.title}` : orders[idx].ticketTitle;
-      const showDate = ticket ? `${ticket.date} ${ticket.time}` : '';
-      await transporter.sendMail({
-        from: `"樂放音樂展演空間" <${smtp.user}>`,
-        to: orders[idx].email,
-        subject: `【樂放音樂展演空間】購票確認 - ${showTitle}`,
-        html: `
-          <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
-            <div style="text-align:center;margin-bottom:24px">
-              <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
-              <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
-            </div>
-            <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
-              <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 購票已確認</h2>
-              <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
-                ${orders[idx].name} 您好，<br>
-                您的購票已確認成功！演出當日請出示此確認信入場。
-              </p>
-              <table style="width:100%;border-collapse:collapse;font-size:14px">
-                <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">演出</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showTitle}</td></tr>
-                <tr><td style="padding:8px 0;color:#6a7a8a">日期時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showDate}</td></tr>
-                <tr><td style="padding:8px 0;color:#6a7a8a">票數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].quantity} 張</td></tr>
-                <tr><td style="padding:8px 0;color:#6a7a8a">姓名</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].name}</td></tr>
-              </table>
-              <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
-              <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-                📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
-                📞 0931-223-353（王小姐）
-              </p>
-            </div>
-            <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+  if (orders[idx].email) {
+    const tickets = readJSON('tickets.json');
+    const ticket = tickets.find(t => t.id === orders[idx].ticketId);
+    const artistText = ticket?.artist ? `${ticket.artist} - ` : '';
+    const showTitle = ticket ? `${artistText}${ticket.title}` : orders[idx].ticketTitle;
+    const showDate = ticket ? `${ticket.date} ${ticket.time}` : '';
+    sendEmail({
+      to: orders[idx].email,
+      subject: `【樂放音樂展演空間】購票確認 - ${showTitle}`,
+      html: `
+        <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
+          <div style="text-align:center;margin-bottom:24px">
+            <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
+            <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
           </div>
-        `
-      });
-      console.log('已寄送購票確認信給客人:', orders[idx].email);
-    }
-  } catch (e) {
-    console.error('寄送購票確認信失敗:', e.message);
+          <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
+            <h2 style="color:#4a8a5a;font-size:18px;margin:0 0 16px">✅ 購票已確認</h2>
+            <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
+              ${orders[idx].name} 您好，<br>
+              您的購票已確認成功！演出當日請出示此確認信入場。
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">演出</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showTitle}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">日期時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${showDate}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">票數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].quantity} 張</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">姓名</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${orders[idx].name}</td></tr>
+            </table>
+            <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
+            <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
+              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+              📞 0931-223-353（王小姐）
+            </p>
+          </div>
+          <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+        </div>
+      `
+    }).catch(e => console.error('寄送購票確認信失敗:', e.message));
   }
   res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2 style="color:#4a8a5a">✅ 購票已確認！</h2><p>已寄送確認信給 ' + orders[idx].email + '</p></body></html>');
 });
@@ -1021,21 +1018,19 @@ app.post('/api/smtp-settings', authMiddleware, (req, res) => {
 });
 
 app.post('/api/smtp-test', authMiddleware, async (req, res) => {
-  const transporter = createTransporter();
-  if (!transporter) return res.status(400).json({ error: 'SMTP 尚未設定' });
   try {
-    await transporter.verify();
-    // 寄一封測試信
-    const smtp = getEmailSettings();
-    await transporter.sendMail({
-      from: `"樂放訂位系統" <${smtp.user}>`,
+    const ok = await sendEmail({
       to: OWNER_EMAIL,
-      subject: '【測試】SMTP 設定成功',
-      html: '<p>恭喜！SMTP 郵件設定成功，訂位系統會自動寄送通知到此信箱。</p>'
+      subject: '【測試】Email 設定成功 - 樂放音樂展演空間',
+      html: '<div style="font-family:sans-serif;padding:20px"><h2>✅ Email 通知設定成功！</h2><p>恭喜！系統已能正常寄送通知到此信箱。</p><p style="color:#888;font-size:13px">訂位與購票通知將自動寄送到此信箱。</p></div>'
     });
-    res.json({ ok: true, message: '測試信已寄出，請檢查信箱' });
+    if (ok) {
+      res.json({ ok: true, message: '測試信已寄出，請檢查信箱（含垃圾郵件）' });
+    } else {
+      res.status(400).json({ error: '寄信失敗，請檢查 RESEND_API_KEY 或 SMTP 設定' });
+    }
   } catch (e) {
-    res.status(400).json({ error: 'SMTP 連線失敗: ' + e.message });
+    res.status(400).json({ error: '寄信失敗: ' + e.message });
   }
 });
 
@@ -1055,17 +1050,11 @@ app.listen(PORT, async () => {
   console.log(`   SITE_URL: ${SITE_URL}`);
   console.log(`   OWNER_EMAIL: ${OWNER_EMAIL}`);
 
-  // 啟動時驗證 SMTP 連線
-  const transporter = createTransporter();
-  if (transporter) {
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP 連線成功！Email 通知已啟用');
-    } catch (e) {
-      console.error('❌ SMTP 連線失敗:', e.message);
-      console.error('   請檢查 SMTP 設定（host / user / pass）');
-    }
+  // 檢查 Email 設定
+  if (RESEND_API_KEY) {
+    console.log('✅ Resend API Key 已設定，Email 通知已啟用（HTTPS）');
   } else {
-    console.error('❌ SMTP 未設定，Email 通知功能停用');
+    console.log('⚠️  未設定 RESEND_API_KEY，將嘗試用 SMTP 寄信（雲端平台可能無法使用）');
+    console.log('   請到 resend.com 申請免費 API Key，並設定 Railway 環境變數 RESEND_API_KEY');
   }
 });

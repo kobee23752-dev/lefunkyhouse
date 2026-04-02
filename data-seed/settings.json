@@ -3,8 +3,8 @@
   "siteName": "樂放音樂展演空間",
   "smtp": {
     "host": "smtp.gmail.com",
-    "port": 587,
-    "secure": false,
+    "port": 465,
+    "secure": true,
     "user": "a0931223353@gmail.com",
     "pass": "dwed purn zelt ypqh"
   }
