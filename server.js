@@ -52,19 +52,41 @@ function genConfirmToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
 }
 
+// 預設 SMTP 設定（避免 settings.json 遺失時無法寄信）
+const DEFAULT_SMTP = {
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  user: 'a0931223353@gmail.com',
+  pass: 'dwed purn zelt ypqh'
+};
+
 function getEmailSettings() {
   const settings = readJSON('settings.json');
-  return settings.smtp || null;
+  const smtp = settings.smtp || null;
+  // 如果 settings.json 沒有 SMTP 設定，使用預設值
+  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) {
+    console.log('settings.json 無 SMTP 設定，使用預設值');
+    return DEFAULT_SMTP;
+  }
+  return smtp;
 }
 
 function createTransporter() {
   const smtp = getEmailSettings();
-  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) return null;
+  if (!smtp || !smtp.host || !smtp.user || !smtp.pass) {
+    console.error('SMTP 設定不完整，無法建立 transporter');
+    return null;
+  }
+  console.log('建立 SMTP transporter:', smtp.host, smtp.user);
   return nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port || 587,
     secure: smtp.secure || false,
-    auth: { user: smtp.user, pass: smtp.pass }
+    auth: { user: smtp.user, pass: smtp.pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 }
 
@@ -1027,7 +1049,23 @@ app.get('*', (req, res) => {
 });
 
 // ─── Start ───
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🎵 樂放音樂展演空間 running at http://localhost:${PORT}`);
   console.log(`   Admin panel: http://localhost:${PORT}/admin`);
+  console.log(`   SITE_URL: ${SITE_URL}`);
+  console.log(`   OWNER_EMAIL: ${OWNER_EMAIL}`);
+
+  // 啟動時驗證 SMTP 連線
+  const transporter = createTransporter();
+  if (transporter) {
+    try {
+      await transporter.verify();
+      console.log('✅ SMTP 連線成功！Email 通知已啟用');
+    } catch (e) {
+      console.error('❌ SMTP 連線失敗:', e.message);
+      console.error('   請檢查 SMTP 設定（host / user / pass）');
+    }
+  } else {
+    console.error('❌ SMTP 未設定，Email 通知功能停用');
+  }
 });
