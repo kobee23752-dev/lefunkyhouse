@@ -259,8 +259,8 @@
         /* Tickets */
         .tickets-month-section{margin-bottom:28px}
         .tickets-month-title{display:inline-block;font-size:.9rem;font-weight:500;color:var(--text-secondary);background:rgba(30,45,61,.06);padding:4px 14px;border-radius:20px;margin-bottom:10px}
-        .tickets-grid{display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
-        .ticket-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .3s;width:200px;height:460px;flex-shrink:0;display:flex;flex-direction:column}
+        .tickets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;align-items:stretch}
+        .ticket-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .3s;display:flex;flex-direction:column}
         .ticket-card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.07)}
         .ticket-poster{width:100%;height:260px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-muted);font-size:1.5rem}
         .ticket-poster img{width:100%;height:100%;object-fit:cover}
