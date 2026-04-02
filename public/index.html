@@ -974,6 +974,7 @@ document.getElementById('resForm').addEventListener('submit', async e => {
 });
 
 /* ─── Load Tickets ─── */
+var ticketDataCache = [];
 async function loadTickets() {
     try {
         const tickets = await (await fetch('/api/tickets')).json();
@@ -990,7 +991,6 @@ async function loadTickets() {
             if (!grouped[key]) grouped[key] = { label: `${y} 年 ${monthNames[parseInt(m)-1]}`, tickets: [] };
             grouped[key].tickets.push(t);
         });
-        var ticketDataCache = [];
         function renderCard(t) {
             const soldOut = t.soldOut;
             const remaining = t.remaining;
