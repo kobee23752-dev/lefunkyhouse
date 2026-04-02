@@ -84,20 +84,18 @@
 
         /* Home hero image */
         .home-hero-img{width:100%;border-radius:12px;overflow:hidden;margin-bottom:36px}
-        .home-hero-img img{width:100%;height:280px;object-fit:cover;display:block}
+        .home-hero-img img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
 
         /* Home feature blocks */
         .home-features{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:40px}
         .home-feat{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:all .3s}
         .home-feat:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.06)}
-        .home-feat img{width:100%;height:140px;object-fit:cover}
+        .home-feat img{width:100%;aspect-ratio:4/3;object-fit:cover}
         .home-feat .feat-body{padding:12px 14px}
         .home-feat .feat-title{font-size:.92rem;font-weight:700;margin-bottom:4px;color:var(--text-primary)}
         .home-feat .feat-desc{font-size:.82rem;color:var(--text-secondary);line-height:1.6}
         @media(max-width:600px){
             .home-features{grid-template-columns:1fr 1fr;gap:12px}
-            .home-feat img{height:110px}
-            .home-hero-img img{height:180px}
         }
 
         /* News banner */
