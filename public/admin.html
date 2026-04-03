@@ -435,6 +435,7 @@
             </div>
             <div>
                 <div class="form-group"><label>歌手名稱 *</label><input class="input" id="artistName" required></div>
+                <div class="form-group"><label>分類 *</label><select class="input" id="artistCategory"><option value="resident">駐唱歌手與樂手</option><option value="special">售票專場歌手與樂手</option></select></div>
                 <div class="form-group"><label>簡介</label><textarea class="textarea" id="artistBio" rows="5"></textarea></div>
                 <div class="form-group"><label>排序位置</label><select class="input" id="artistOrder"></select></div>
             </div>
@@ -763,7 +764,7 @@ async function loadArtistsAdmin() {
             <div style="width:40px;height:40px;border-radius:6px;overflow:hidden;background:var(--gray-200);flex-shrink:0;display:flex;align-items:center;justify-content:center">
                 ${a.photo ? `<img src="${a.photo}" style="width:100%;height:100%;object-fit:cover">` : '<span style="font-size:1rem">&#127908;</span>'}
             </div>
-            <div style="flex:1;min-width:0;font-weight:500;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</div>
+            <div style="flex:1;min-width:0;font-weight:500;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)} <span style="font-size:.65rem;color:var(--gray-500);font-weight:400">${a.category === 'special' ? '售票專場' : '駐唱'}</span></div>
             <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:.75rem" onclick='editArtist("${a.id}")'>編輯</button>
             <button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:.75rem" onclick="deleteArtist('${a.id}')">刪除</button>
         </div>`;
@@ -787,6 +788,7 @@ function openArtistModal(item) {
     document.getElementById('artistModalTitle').textContent = item ? '編輯歌手' : '新增歌手';
     document.getElementById('artistEditId').value = item?.id || '';
     document.getElementById('artistName').value = item?.name || '';
+    document.getElementById('artistCategory').value = item?.category || 'resident';
     document.getElementById('artistBio').value = item?.bio || '';
     // Populate order dropdown
     const orderSelect = document.getElementById('artistOrder');
@@ -844,6 +846,7 @@ async function saveArtist() {
         fd.append('youtube', '');
         fd.append('spotify', '');
         fd.append('order', document.getElementById('artistOrder').value);
+        fd.append('category', document.getElementById('artistCategory').value);
         fd.append('photoFit', document.getElementById('artistPhotoFit').value);
         fd.append('photoPosY', document.getElementById('artistPhotoPosY').value);
         const file = document.getElementById('artistPhotoInput').files[0];

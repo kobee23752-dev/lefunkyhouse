@@ -464,8 +464,13 @@
     <!-- ═══ Artists ═══ -->
     <section id="artists" class="sec">
         <h2>Artists</h2>
-        <p class="sub">常駐 &amp; 合作歌手</p>
-        <div class="artists-grid" id="artistsContainer">載入中...</div>
+        <p class="sub" style="margin-bottom:8px">駐唱歌手與樂手</p>
+        <div class="artists-grid" id="artistsResident">載入中...</div>
+
+        <div id="artistsSpecialSection" style="display:none;margin-top:48px">
+            <p class="sub" style="margin-bottom:8px;border-top:1px solid var(--border);padding-top:28px">售票專場歌手與樂手</p>
+            <div class="artists-grid" id="artistsSpecial"></div>
+        </div>
     </section>
 
     <!-- ═══ Schedule ═══ -->
@@ -799,20 +804,31 @@ function formatBio(bio, idx) {
 async function loadArtists() {
     try {
         const artists = await (await fetch('/api/artists')).json();
-        const c = document.getElementById('artistsContainer');
-        if (!artists.length) { c.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px">歌手資料即將更新，敬請期待</div>'; return; }
-        c.innerHTML = artists.map((a, idx) => {
-            const posY = a.photoPosY ?? 50;
-            return `
-            <a href="/artist.html?id=${a.id}" class="artist-card" style="text-decoration:none;color:inherit">
-                <div class="artist-photo">
-                    ${a.photo ? `<img src="${esc(a.photo)}" alt="${esc(a.name)}" style="object-fit:cover;object-position:center ${posY}%">` : '&#127908;'}
-                </div>
-                <div class="artist-info" id="artistInfo${idx}">
-                    <div class="artist-name">${esc(a.name)}</div>
-                </div>
-            </a>`;
-        }).join('');
+        const resident = artists.filter(a => a.category !== 'special');
+        const special = artists.filter(a => a.category === 'special');
+
+        function renderArtistCards(list) {
+            return list.map(a => {
+                const posY = a.photoPosY ?? 50;
+                return `
+                <a href="/artist.html?id=${a.id}" class="artist-card" style="text-decoration:none;color:inherit">
+                    <div class="artist-photo">
+                        ${a.photo ? `<img src="${esc(a.photo)}" alt="${esc(a.name)}" style="object-fit:cover;object-position:center ${posY}%">` : '&#127908;'}
+                    </div>
+                    <div class="artist-info">
+                        <div class="artist-name">${esc(a.name)}</div>
+                    </div>
+                </a>`;
+            }).join('');
+        }
+
+        const rc = document.getElementById('artistsResident');
+        if (resident.length) { rc.innerHTML = renderArtistCards(resident); }
+        else { rc.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:60px">歌手資料即將更新，敬請期待</div>'; }
+
+        const sc = document.getElementById('artistsSpecial');
+        const ss = document.getElementById('artistsSpecialSection');
+        if (special.length) { sc.innerHTML = renderArtistCards(special); ss.style.display = 'block'; }
     } catch { }
 }
 

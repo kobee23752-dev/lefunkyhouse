@@ -395,7 +395,7 @@ app.get('/api/artists', (req, res) => {
 });
 
 app.post('/api/artists', authMiddleware, uploadArtist.single('photo'), (req, res) => {
-  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY } = req.body;
+  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY, category } = req.body;
   if (!name) return res.status(400).json({ error: '請輸入歌手名稱' });
   const artists = readJSON('artists.json');
   const item = {
@@ -407,7 +407,8 @@ app.post('/api/artists', authMiddleware, uploadArtist.single('photo'), (req, res
     photoFit: photoFit || 'cover',
     photoPosY: parseInt(photoPosY) || 50,
     links: { ig: ig || '', youtube: youtube || '', spotify: spotify || '' },
-    order: parseInt(order) || artists.length
+    order: parseInt(order) || artists.length,
+    category: category || 'resident'
   };
   // Auto-shift: if order conflicts, push others down
   const newOrder = item.order;
@@ -423,7 +424,7 @@ app.put('/api/artists/:id', authMiddleware, uploadArtist.single('photo'), (req, 
   const idx = artists.findIndex(a => a.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: '找不到' });
 
-  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY } = req.body;
+  const { name, genre, bio, ig, youtube, spotify, order, photoFit, photoPosY, category } = req.body;
   if (name) artists[idx].name = name;
   if (genre !== undefined) artists[idx].genre = genre;
   if (bio !== undefined) artists[idx].bio = bio;
@@ -432,6 +433,7 @@ app.put('/api/artists/:id', authMiddleware, uploadArtist.single('photo'), (req, 
   }
   if (photoFit !== undefined) artists[idx].photoFit = photoFit;
   if (photoPosY !== undefined) artists[idx].photoPosY = parseInt(photoPosY) || 50;
+  if (category !== undefined) artists[idx].category = category;
   artists[idx].links = {
     ig: ig !== undefined ? ig : artists[idx].links.ig,
     youtube: youtube !== undefined ? youtube : artists[idx].links.youtube,
