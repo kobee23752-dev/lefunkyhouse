@@ -454,6 +454,20 @@ app.put('/api/artists/:id', authMiddleware, uploadArtist.single('photo'), (req, 
   res.json(artists[idx]);
 });
 
+// 批次排序 API — 一次搞定
+app.post('/api/artists/reorder', authMiddleware, (req, res) => {
+  const { ids } = req.body; // 按順序排好的 id 陣列
+  if (!Array.isArray(ids)) return res.status(400).json({ error: '需要 ids 陣列' });
+  const artists = readJSON('artists.json');
+  ids.forEach((id, i) => {
+    const a = artists.find(x => x.id === id);
+    if (a) a.order = i + 1;
+  });
+  artists.sort((a, b) => a.order - b.order);
+  writeJSON('artists.json', artists);
+  res.json({ ok: true });
+});
+
 app.delete('/api/artists/:id', authMiddleware, (req, res) => {
   let artists = readJSON('artists.json');
   const artist = artists.find(a => a.id === req.params.id);

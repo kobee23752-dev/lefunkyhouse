@@ -788,11 +788,15 @@ async function moveArtist(id, direction) {
     if (idx === -1) return;
     const swapIdx = idx + direction;
     if (swapIdx < 0 || swapIdx >= sameCategory.length) return;
-    // Swap orders
-    const orderA = sameCategory[idx].order;
-    const orderB = sameCategory[swapIdx].order;
-    await fetch('/api/artists/' + sameCategory[idx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderB }) });
-    await fetch('/api/artists/' + sameCategory[swapIdx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderA }) });
+    // Swap in array
+    [sameCategory[idx], sameCategory[swapIdx]] = [sameCategory[swapIdx], sameCategory[idx]];
+    // Rebuild full order: resident first, then special
+    const resident = allArtists.filter(a => (a.category || 'resident') !== 'special');
+    const special = allArtists.filter(a => a.category === 'special');
+    const reordered = cat === 'special' ? resident : sameCategory;
+    const reorderedOther = cat === 'special' ? sameCategory : special;
+    const allIds = [...reordered.map(a => a.id), ...reorderedOther.map(a => a.id)];
+    await fetch('/api/artists/reorder', { method:'POST', headers: authHeaders(), body: JSON.stringify({ ids: allIds }) });
     loadArtistsAdmin();
 }
 
