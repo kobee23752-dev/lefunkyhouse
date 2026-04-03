@@ -780,15 +780,19 @@ async function loadArtistsAdmin() {
 }
 
 async function moveArtist(id, direction) {
-    const idx = allArtists.findIndex(a => a.id === id);
+    const artist = allArtists.find(a => a.id === id);
+    if (!artist) return;
+    const cat = artist.category || 'resident';
+    const sameCategory = allArtists.filter(a => (a.category || 'resident') === cat);
+    const idx = sameCategory.findIndex(a => a.id === id);
     if (idx === -1) return;
     const swapIdx = idx + direction;
-    if (swapIdx < 0 || swapIdx >= allArtists.length) return;
+    if (swapIdx < 0 || swapIdx >= sameCategory.length) return;
     // Swap orders
-    const orderA = allArtists[idx].order;
-    const orderB = allArtists[swapIdx].order;
-    await fetch('/api/artists/' + allArtists[idx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderB }) });
-    await fetch('/api/artists/' + allArtists[swapIdx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderA }) });
+    const orderA = sameCategory[idx].order;
+    const orderB = sameCategory[swapIdx].order;
+    await fetch('/api/artists/' + sameCategory[idx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderB }) });
+    await fetch('/api/artists/' + sameCategory[swapIdx].id, { method:'PUT', headers: authHeaders(), body: JSON.stringify({ order: orderA }) });
     loadArtistsAdmin();
 }
 
