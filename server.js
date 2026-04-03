@@ -643,10 +643,10 @@ app.put('/api/tickets/:id', authMiddleware, uploadTicketPoster.single('poster'),
   if (totalTickets !== undefined) tickets[idx].totalTickets = parseInt(totalTickets) || 0;
   if (manualRemaining !== undefined) {
     const newVal = manualRemaining !== '' ? parseInt(manualRemaining) : null;
-    if (newVal !== null && newVal !== tickets[idx].manualRemaining) {
+    if (newVal !== null) {
       tickets[idx].manualRemaining = newVal;
       tickets[idx].manualRemainingSetAt = new Date().toISOString();
-    } else if (newVal === null) {
+    } else {
       tickets[idx].manualRemaining = null;
       tickets[idx].manualRemainingSetAt = null;
     }
