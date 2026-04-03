@@ -790,10 +790,17 @@ function openArtistModal(item) {
     document.getElementById('artistName').value = item?.name || '';
     document.getElementById('artistCategory').value = item?.category || 'resident';
     document.getElementById('artistBio').value = item?.bio || '';
-    // Populate order dropdown
+    // Populate order dropdown (per category)
     const orderSelect = document.getElementById('artistOrder');
-    const total = allArtists.length + (item ? 0 : 1);
-    orderSelect.innerHTML = Array.from({length: total}, (_, i) => `<option value="${i+1}"${(item ? item.order : total) === i+1 ? ' selected' : ''}>第 ${i+1} 位</option>`).join('');
+    function updateOrderDropdown() {
+        const cat = document.getElementById('artistCategory').value;
+        const sameCategory = allArtists.filter(a => (a.category || 'resident') === cat);
+        const total = sameCategory.length + (item && (item.category || 'resident') === cat ? 0 : 1);
+        const currentOrder = item ? (sameCategory.findIndex(a => a.id === item.id) + 1 || total) : total;
+        orderSelect.innerHTML = Array.from({length: total}, (_, i) => `<option value="${i+1}"${currentOrder === i+1 ? ' selected' : ''}>第 ${i+1} 位</option>`).join('');
+    }
+    document.getElementById('artistCategory').onchange = updateOrderDropdown;
+    updateOrderDropdown();
     document.getElementById('artistPhotoFit').value = item?.photoFit || 'cover';
     document.getElementById('artistPhotoPosY').value = item?.photoPosY ?? 50;
     document.getElementById('artistPhotoInput').value = '';
