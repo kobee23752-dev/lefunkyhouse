@@ -428,12 +428,30 @@ app.put('/api/artists/:id', authMiddleware, uploadArtist.single('photo'), (req, 
   if (name) artists[idx].name = name;
   if (genre !== undefined) artists[idx].genre = genre;
   if (bio !== undefined) artists[idx].bio = bio;
-  if (order !== undefined) {
-    artists[idx].order = parseInt(order) || 0;
-  }
+  const newCategory = category !== undefined ? category : (artists[idx].category || 'resident');
+  const oldCategory = artists[idx].category || 'resident';
+  if (category !== undefined) artists[idx].category = category;
   if (photoFit !== undefined) artists[idx].photoFit = photoFit;
   if (photoPosY !== undefined) artists[idx].photoPosY = parseInt(photoPosY) || 50;
-  if (category !== undefined) artists[idx].category = category;
+
+  // Handle order within same category
+  if (order !== undefined) {
+    const newOrder = parseInt(order) || 1;
+    const targetCat = newCategory;
+    const thisId = artists[idx].id;
+    // Get same category artists (excluding this one)
+    const sameCat = artists.filter(a => a.id !== thisId && (a.category || 'resident') === targetCat);
+    // Sort by current order
+    sameCat.sort((a, b) => (a.order || 0) - (b.order || 0));
+    // Insert at new position
+    sameCat.splice(newOrder - 1, 0, artists[idx]);
+    // Reassign orders for this category
+    sameCat.forEach((a, i) => { a.order = i + 1; });
+    // Also fix order for other category
+    const otherCat = artists.filter(a => (a.category || 'resident') !== targetCat);
+    otherCat.sort((a, b) => (a.order || 0) - (b.order || 0));
+    otherCat.forEach((a, i) => { a.order = i + 1; });
+  }
   artists[idx].links = {
     ig: ig !== undefined ? ig : artists[idx].links.ig,
     youtube: youtube !== undefined ? youtube : artists[idx].links.youtube,
