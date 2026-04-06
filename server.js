@@ -46,6 +46,7 @@ function genId() {
 
 // ─── Email Setup ───
 const OWNER_EMAIL = 'a0931223353@gmail.com';
+const HELPER_EMAIL = 'xushicun1967@gmail.com';
 const SITE_URL = process.env.SITE_URL || 'https://lefunkyhouse-production.up.railway.app';
 
 function genConfirmToken(id) {
@@ -178,6 +179,26 @@ async function sendReservationEmails(reservation) {
     `
   });
   if (ok) console.log('已寄送訂位通知信給老闆娘');
+
+  // 寄給小幫手（純通知，不含確認按鈕）
+  sendEmail({
+    to: HELPER_EMAIL,
+    subject: `【訂位通知】${reservation.name} - ${dateStr} ${timeStr} (${reservation.guests}位)`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;padding:20px">
+        <h2 style="color:#1e2d3d;border-bottom:2px solid #c4a55a;padding-bottom:8px">訂位通知（副本）</h2>
+        <table style="font-size:14px;line-height:2">
+          <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${reservation.name}</strong></td></tr>
+          <tr><td style="color:#888">電話</td><td>${reservation.phone}</td></tr>
+          <tr><td style="color:#888">日期</td><td>${dateStr}</td></tr>
+          <tr><td style="color:#888">時間</td><td>${timeStr}</td></tr>
+          <tr><td style="color:#888">人數</td><td>${reservation.guests} 位</td></tr>
+          ${reservation.note ? `<tr><td style="color:#888">備註</td><td>${reservation.note}</td></tr>` : ''}
+        </table>
+        <p style="color:#aaa;font-size:12px;margin-top:16px">此為系統自動副本通知，請提醒老闆娘確認訂位。</p>
+      </div>
+    `
+  }).then(() => console.log('已寄送訂位副本給小幫手')).catch(e => console.error('小幫手寄信錯誤:', e));
 }
 
 // ─── 確認訂位通知信（寄給客人）───
