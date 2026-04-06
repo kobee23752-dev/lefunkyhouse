@@ -973,6 +973,9 @@ document.getElementById('resForm').addEventListener('submit', async e => {
     if (!body.name || !body.phone || !body.date || !body.time || !body.guests) {
         showToast('請填寫所有必填欄位', 'error'); return;
     }
+    const btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = '送出中...';
     try {
         const res = await fetch('/api/reservations', {
             method: 'POST',
@@ -980,13 +983,26 @@ document.getElementById('resForm').addEventListener('submit', async e => {
             body: JSON.stringify(body)
         });
         if (res.ok) {
-            document.getElementById('resForm').reset();
-            showToast('訂位已送出！訂位確認後將以 Email 通知您');
+            // 成功：替換整個表單區塊為成功訊息
+            document.querySelector('.form-card').innerHTML = `
+                <div style="text-align:center;padding:40px 20px">
+                    <div style="font-size:48px;margin-bottom:12px">✅</div>
+                    <h3 style="color:#1e2d3d;margin-bottom:12px">訂位已送出！</h3>
+                    <p style="color:#6a7a8a;line-height:1.8;font-size:.95rem">
+                        提醒您，待收到「已確認」通知後，才算訂位成功。<br>
+                        ${body.email ? '確認通知將寄送至 <strong>' + body.email + '</strong>' : '請留意來電確認'}
+                    </p>
+                    <button onclick="location.reload()" style="margin-top:20px;padding:10px 28px;background:#1e2d3d;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:.9rem">再次訂位</button>
+                </div>`;
         } else {
             showToast('訂位失敗，請稍後再試', 'error');
+            btn.disabled = false;
+            btn.textContent = '送出訂位';
         }
     } catch {
         showToast('網路錯誤，請稍後再試', 'error');
+        btn.disabled = false;
+        btn.textContent = '送出訂位';
     }
 });
 
