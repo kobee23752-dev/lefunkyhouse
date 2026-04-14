@@ -279,8 +279,8 @@
         .poster-fullscreen{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);z-index:10000;justify-content:center;align-items:center;cursor:pointer}
         .poster-fullscreen.active{display:flex}
         .poster-fullscreen img{max-width:95%;max-height:95%;object-fit:contain}
-        .ticket-poster{width:100%;height:260px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-muted);font-size:1.5rem}
-        .ticket-poster img{width:100%;height:100%;object-fit:cover;object-position:center}
+        .ticket-poster{width:100%;background:var(--bg-input);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--text-muted);font-size:1.5rem}
+        .ticket-poster img{width:100%;height:auto;display:block}
         .ticket-body{padding:12px;flex:1;display:flex;flex-direction:column}
         .ticket-date{font-size:.78rem;color:var(--sage);letter-spacing:.03em;margin-bottom:4px;white-space:nowrap}
         .ticket-title{font-size:.95rem;font-weight:500;margin-bottom:4px}
@@ -350,7 +350,6 @@
             .artist-name{font-size:.8rem}
             .tickets-grid{grid-template-columns:repeat(2,1fr);gap:10px}
             .ticket-card{height:auto}
-            .ticket-poster{height:200px}
             .ticket-body{padding:10px}
             .ticket-title{font-size:.85rem}
             .ticket-date{font-size:.72rem}
@@ -376,7 +375,6 @@
             .nav-logo{width:24px;height:24px;margin:0 2px 0 4px}
             main{padding:16px 12px}
             .tickets-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-            .ticket-poster{height:160px}
             .svc-grid{grid-template-columns:repeat(3,1fr);gap:8px}
             .svc{padding:16px 8px}
             .svc .icon{font-size:1.3rem;margin-bottom:6px}
@@ -1033,7 +1031,7 @@ async function loadTickets() {
             return `
             <div class="ticket-card" onclick="openTicketModal('${t.id}')">
                 <div class="ticket-poster">
-                    ${t.poster ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}" style="object-position:center ${/^\d+$/.test(t.posterPosition) ? t.posterPosition+'%' : ({'top':'0%','center top':'25%','center':'50%','center bottom':'75%','bottom':'100%'}[t.posterPosition]||'50%')}">` : '&#127926;'}
+                    ${t.poster ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}">` : '&#127926;'}
                 </div>
                 <div class="ticket-body">
                     ${t.artist ? `<div class="ticket-title">${esc(t.artist)}</div>` : ''}
