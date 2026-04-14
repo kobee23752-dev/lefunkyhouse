@@ -475,14 +475,6 @@
             <input type="file" accept="image/*" id="ticketPosterInput" style="position:absolute;left:-9999px">
             <div id="ticketPosterPreview" style="margin-top:8px"></div>
         </div>
-        <div class="form-group"><label>海報顯示位置 <span id="ticketPosterPosLabel" style="color:var(--gray-600);font-weight:400">50%</span></label>
-            <input type="range" min="0" max="100" value="50" id="ticketPosterPosition" style="width:100%;cursor:pointer;accent-color:var(--primary)" oninput="updatePosterPreviewPos(this.value)">
-            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--gray-500);margin-top:2px"><span>上</span><span>中</span><span>下</span></div>
-            <div style="margin-top:10px;font-size:.8rem;color:var(--gray-500)">▼ 官網卡片預覽</div>
-            <div id="ticketPosterPosPreview" style="margin-top:4px;width:200px;height:260px;border-radius:8px;overflow:hidden;background:var(--gray-200);display:none;border:1px solid var(--gray-300)">
-                <img id="ticketPosterPosImg" style="width:100%;height:100%;object-fit:cover;object-position:center 50%">
-            </div>
-        </div>
         <div class="modal-actions">
             <button class="btn btn-outline" onclick="closeModal('ticketModal')">取消</button>
             <button class="btn btn-primary" onclick="saveTicket()">儲存</button>
@@ -541,15 +533,8 @@ function showApp() {
     });
     document.getElementById('ticketPosterInput').addEventListener('change', function() {
         if (this.files[0]) {
-            const objUrl = URL.createObjectURL(this.files[0]);
-            document.getElementById('ticketPosterPreview').innerHTML = '<img src="'+objUrl+'" style="max-width:200px;border-radius:6px">';
+            document.getElementById('ticketPosterPreview').innerHTML = '<img src="'+URL.createObjectURL(this.files[0])+'" style="max-width:200px;border-radius:6px">';
             document.getElementById('ticketPosterBtn').textContent = '已選擇：' + this.files[0].name;
-            // Update position preview with new image
-            const posPreview = document.getElementById('ticketPosterPosPreview');
-            const posImg = document.getElementById('ticketPosterPosImg');
-            posImg.src = objUrl;
-            posImg.style.objectPosition = 'center ' + document.getElementById('ticketPosterPosition').value + '%';
-            posPreview.style.display = 'block';
         }
     });
 }
@@ -1202,30 +1187,9 @@ function openTicketModal(item) {
     document.getElementById('ticketTotalTickets').value = item?.totalTickets || '';
     document.getElementById('ticketManualRemaining').value = item?.manualRemaining ?? '';
     document.getElementById('ticketPaymentDeadline').value = item?.paymentDeadline || '';
-    // Convert legacy text values to percentage
-    let posVal = item?.posterPosition || '50';
-    if (posVal === 'top') posVal = '0';
-    else if (posVal === 'center top') posVal = '25';
-    else if (posVal === 'center') posVal = '50';
-    else if (posVal === 'center bottom') posVal = '75';
-    else if (posVal === 'bottom') posVal = '100';
-    document.getElementById('ticketPosterPosition').value = posVal;
-    document.getElementById('ticketPosterPosLabel').textContent = posVal + '%';
     document.getElementById('ticketPosterInput').value = '';
-    const posterSrc = item?.poster || '';
-    document.getElementById('ticketPosterPreview').innerHTML = posterSrc ? `<img src="${posterSrc}" style="max-width:200px;border-radius:6px">` : '';
-    // Show position preview if poster exists
-    const posPreview = document.getElementById('ticketPosterPosPreview');
-    const posImg = document.getElementById('ticketPosterPosImg');
-    if (posterSrc) { posPreview.style.display = 'block'; posImg.src = posterSrc; posImg.style.objectPosition = 'center ' + posVal + '%'; }
-    else { posPreview.style.display = 'none'; }
+    document.getElementById('ticketPosterPreview').innerHTML = item?.poster ? `<img src="${item.poster}" style="max-width:200px;border-radius:6px">` : '';
     document.getElementById('ticketModal').classList.add('open');
-}
-
-function updatePosterPreviewPos(val) {
-    document.getElementById('ticketPosterPosLabel').textContent = val + '%';
-    const img = document.getElementById('ticketPosterPosImg');
-    if (img.src) img.style.objectPosition = 'center ' + val + '%';
 }
 
 async function editTicket(id) {
@@ -1251,7 +1215,6 @@ async function saveTicket() {
         fd.append('totalTickets', document.getElementById('ticketTotalTickets').value || '0');
         fd.append('manualRemaining', document.getElementById('ticketManualRemaining').value);
         fd.append('paymentDeadline', document.getElementById('ticketPaymentDeadline').value);
-        fd.append('posterPosition', document.getElementById('ticketPosterPosition').value);
         const file = document.getElementById('ticketPosterInput').files[0];
         if (file) fd.append('poster', file);
 
