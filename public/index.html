@@ -1033,7 +1033,7 @@ async function loadTickets() {
             return `
             <div class="ticket-card" onclick="openTicketModal('${t.id}')">
                 <div class="ticket-poster">
-                    ${t.poster ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}" style="object-position:${t.posterPosition||'center'}">` : '&#127926;'}
+                    ${t.poster ? `<img src="${esc(t.poster)}" alt="${esc(t.title)}" style="object-position:center ${/^\d+$/.test(t.posterPosition) ? t.posterPosition+'%' : ({'top':'0%','center top':'25%','center':'50%','center bottom':'75%','bottom':'100%'}[t.posterPosition]||'50%')}">` : '&#127926;'}
                 </div>
                 <div class="ticket-body">
                     ${t.artist ? `<div class="ticket-title">${esc(t.artist)}</div>` : ''}
