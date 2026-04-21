@@ -379,7 +379,65 @@ app.put('/api/settings/password', authMiddleware, (req, res) => {
 //  NEWS
 // ═══════════════════════════════════════
 app.get('/api/news', (req, res) => {
-  res.json(readJSON('news.json'));
+  // 手動公告
+  const manualNews = readJSON('news.json').map(n => ({
+    ...n,
+    _sortKey: n.createdAt || n.date || '2000-01-01'
+  }));
+
+  // 自動：最近新增的售票（最多近 30 天）
+  const tickets = readJSON('tickets.json');
+  const now = Date.now();
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const ticketNews = tickets
+    .filter(t => t.createdAt && (now - new Date(t.createdAt).getTime()) < THIRTY_DAYS)
+    .map(t => {
+      const d = new Date(t.createdAt);
+      const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+      const artistText = t.artist ? `${t.artist} - ` : '';
+      return {
+        id: 'auto-ticket-' + t.id,
+        date: dateStr,
+        tag: '售票',
+        text: `${artistText}${t.title}（${t.date}）開放購票`,
+        ticketId: t.id,
+        _sortKey: t.createdAt
+      };
+    });
+
+  // 自動：最近上傳的節目表圖片（最多近 30 天）
+  let scheduleNews = [];
+  try {
+    const schedDir = path.join(UPLOADS_DIR, 'schedule');
+    if (fs.existsSync(schedDir)) {
+      const files = fs.readdirSync(schedDir).filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f));
+      // 找出最新上傳的檔案（只取最新一張，避免多張同一次更新重複）
+      let latest = null;
+      files.forEach(f => {
+        const mtime = fs.statSync(path.join(schedDir, f)).mtime;
+        if (!latest || mtime > latest.mtime) latest = { file: f, mtime };
+      });
+      if (latest && (now - latest.mtime.getTime()) < THIRTY_DAYS) {
+        const d = latest.mtime;
+        const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+        scheduleNews.push({
+          id: 'auto-schedule-' + latest.file,
+          date: dateStr,
+          tag: '節目表',
+          text: '本月節目表已更新',
+          link: 'live',
+          _sortKey: latest.mtime.toISOString()
+        });
+      }
+    }
+  } catch (e) { console.error('schedule news error:', e.message); }
+
+  // 合併、排序、移除 _sortKey
+  const all = [...manualNews, ...ticketNews, ...scheduleNews]
+    .sort((a, b) => (b._sortKey || '').localeCompare(a._sortKey || ''))
+    .map(n => { const { _sortKey, ...rest } = n; return rest; });
+
+  res.json(all);
 });
 
 app.post('/api/news', authMiddleware, (req, res) => {
