@@ -393,7 +393,7 @@ app.get('/api/news', (req, res) => {
     .filter(t => t.createdAt && (now - new Date(t.createdAt).getTime()) < THIRTY_DAYS)
     .map(t => {
       const d = new Date(t.createdAt);
-      const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+      const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
       const artistText = t.artist ? `${t.artist} - ` : '';
       return {
         id: 'auto-ticket-' + t.id,
@@ -419,7 +419,7 @@ app.get('/api/news', (req, res) => {
       });
       if (latest && (now - latest.mtime.getTime()) < THIRTY_DAYS) {
         const d = latest.mtime;
-        const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+        const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
         scheduleNews.push({
           id: 'auto-schedule-' + latest.file,
           date: dateStr,
