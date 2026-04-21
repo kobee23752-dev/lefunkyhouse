@@ -900,7 +900,25 @@ app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
   const orders = readJSON('ticket-orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).send('找不到此訂單');
-  if (orders[idx].status === 'confirmed') return res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>此購票已確認過囉！</h2><p>確認信已寄出給客人。</p></body></html>');
+  if (orders[idx].status === 'confirmed') {
+    const confirmedTimeStr = orders[idx].confirmedAt
+      ? new Date(orders[idx].confirmedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+      : '';
+    return res.send(`
+      <html><body style="font-family:sans-serif;background:#f6f4ef;margin:0;padding:40px">
+        <div style="max-width:500px;margin:40px auto;text-align:center;padding:40px;background:#f5f5f5;border:2px solid #bbb;border-radius:12px">
+          <div style="display:inline-block;background:#999;color:#fff;padding:10px 30px;border-radius:8px;font-size:18px;font-weight:bold;margin-bottom:20px">您已確認</div>
+          <h2 style="color:#666;margin:16px 0">此購票已確認過</h2>
+          <p style="color:#888;font-size:15px;line-height:1.8">
+            ${orders[idx].name} - ${orders[idx].quantity} 張<br>
+            確認信已寄出給客人
+          </p>
+          ${confirmedTimeStr ? `<p style="color:#aaa;font-size:13px;margin-top:12px">確認時間：${confirmedTimeStr}</p>` : ''}
+          <p style="color:#aaa;font-size:13px;margin-top:8px">請勿重複點擊此連結</p>
+        </div>
+      </body></html>
+    `);
+  }
   orders[idx].status = 'confirmed';
   orders[idx].hasPaid = true;
   orders[idx].confirmedAt = new Date().toISOString();
@@ -1061,15 +1079,23 @@ app.get('/api/reservations/:id/confirm', async (req, res) => {
     return res.status(404).send('<h2>找不到此訂位</h2>');
   }
   if (list[idx].status === 'confirmed') {
+    const confirmedTimeStr = list[idx].confirmedAt
+      ? new Date(list[idx].confirmedAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+      : '';
     return res.send(`
-      <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px">
-        <h1 style="color:#c4a55a;font-size:48px;margin:0">✅</h1>
-        <h2 style="color:#1e2d3d">此訂位已確認過囉</h2>
-        <p style="color:#888">${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)</p>
+      <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px;background:#f5f5f5;border:2px solid #bbb;border-radius:12px">
+        <div style="display:inline-block;background:#999;color:#fff;padding:10px 30px;border-radius:8px;font-size:18px;font-weight:bold;margin-bottom:20px">您已確認</div>
+        <h2 style="color:#666;margin:16px 0">此訂位已確認過</h2>
+        <p style="color:#888;font-size:15px;line-height:1.8">
+          ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)
+        </p>
+        ${confirmedTimeStr ? `<p style="color:#aaa;font-size:13px;margin-top:12px">確認時間：${confirmedTimeStr}</p>` : ''}
+        <p style="color:#aaa;font-size:13px;margin-top:8px">請勿重複點擊此連結</p>
       </div>
     `);
   }
   list[idx].status = 'confirmed';
+  list[idx].confirmedAt = new Date().toISOString();
   writeJSON('reservations.json', list);
 
   // 如果客人有留 Email，自動寄確認信
