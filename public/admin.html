@@ -306,7 +306,7 @@
             <div class="page-title">訂位管理</div>
             <div class="card">
                 <div class="table-wrap"><table>
-                    <thead><tr><th>日期</th><th>時間</th><th>姓名</th><th>電話</th><th>Email</th><th>人數</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead>
+                    <thead><tr><th>填寫時間</th><th>日期</th><th>時間</th><th>姓名</th><th>電話</th><th>Email</th><th>人數</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead>
                     <tbody id="resList"></tbody>
                 </table></div>
             </div>
@@ -952,6 +952,7 @@ async function loadResAdmin() {
     const res = await (await fetch('/api/reservations', { headers: authHeaders() })).json();
     document.getElementById('resList').innerHTML = res.length ? res.map(r => `
         <tr>
+            <td style="font-size:.78rem;color:var(--gray-600);white-space:nowrap">${r.createdAt ? new Date(r.createdAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '-'}</td>
             <td>${esc(r.date)}</td><td>${esc(r.time)}</td><td>${esc(r.name)}</td>
             <td>${esc(r.phone)}</td><td style="font-size:.8rem">${esc(r.email || '')}</td><td>${esc(r.guests)} 位</td><td>${esc(r.note)}</td>
             <td><span class="badge badge-${r.status}">${statusLabel(r.status)}</span></td>
@@ -961,7 +962,7 @@ async function loadResAdmin() {
                 <button class="btn btn-danger btn-sm" onclick="deleteRes('${r.id}')">刪除</button>
             </td>
         </tr>
-    `).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--gray-500)">無訂位紀錄</td></tr>';
+    `).join('') : '<tr><td colspan="10" style="text-align:center;color:var(--gray-500)">無訂位紀錄</td></tr>';
 }
 
 // ─── Blocked Dates ───
@@ -1250,6 +1251,7 @@ async function viewTicketOrders(ticketId, title) {
             <table style="width:100%;border-collapse:collapse;font-size:.88rem">
                 <thead>
                     <tr style="background:var(--gray-100);text-align:left">
+                        <th style="padding:10px 8px">填寫時間</th>
                         <th style="padding:10px 8px">姓名</th>
                         <th style="padding:10px 8px">電話</th>
                         <th style="padding:10px 8px">Email</th>
@@ -1263,6 +1265,7 @@ async function viewTicketOrders(ticketId, title) {
                 <tbody>
                     ${orders.map(o => `
                         <tr style="border-bottom:1px solid var(--gray-200)">
+                            <td style="padding:10px 8px;font-size:.78rem;color:var(--gray-600);white-space:nowrap">${o.createdAt ? new Date(o.createdAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '-'}</td>
                             <td style="padding:10px 8px">${esc(o.name)}</td>
                             <td style="padding:10px 8px">${esc(o.phone)}</td>
                             <td style="padding:10px 8px">${esc(o.email || '-')}</td>
