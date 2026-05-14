@@ -53,6 +53,10 @@ function genConfirmToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-confirm-secret').digest('hex').slice(0, 16);
 }
 
+function genCancelToken(id) {
+  return crypto.createHash('sha256').update(id + 'lefunky-cancel-secret').digest('hex').slice(0, 16);
+}
+
 // ─── Email 寄信系統 ───
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const GMAIL_WEBHOOK_URL = process.env.GMAIL_WEBHOOK_URL || '';
@@ -180,6 +184,48 @@ async function sendReservationEmails(reservation) {
   });
   if (ok) console.log('已寄送訂位通知信給老闆娘');
 
+  // 寄給客人（已收到訂位，含取消按鈕）
+  if (reservation.email) {
+    const cancelToken = genCancelToken(reservation.id);
+    const cancelUrl = `${SITE_URL}/api/reservations/${reservation.id}/cancel?token=${cancelToken}`;
+    sendEmail({
+      to: reservation.email,
+      subject: `【樂放音樂展演空間】已收到您的訂位 - ${dateStr} ${timeStr}`,
+      html: `
+        <div style="font-family:'Noto Sans TC',sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f6f4ef;border-radius:12px">
+          <div style="text-align:center;margin-bottom:24px">
+            <h1 style="color:#1e2d3d;font-size:22px;margin:0">樂放音樂展演空間</h1>
+            <p style="color:#c4a55a;font-size:14px;margin:4px 0">Le Funky House</p>
+          </div>
+          <div style="background:#fff;border-radius:8px;padding:24px;border:1px solid #e4dfd4">
+            <h2 style="color:#c4a55a;font-size:18px;margin:0 0 16px">📩 已收到您的訂位</h2>
+            <p style="color:#6a7a8a;font-size:14px;line-height:1.8;margin:0 0 16px">
+              ${reservation.name} 您好，<br>
+              我們已收到您的訂位資料，待店家確認後將再寄一封確認信通知您。<br>
+              <strong style="color:#c4a55a">收到「訂位已確認」通知後，才算訂位成功</strong>
+            </p>
+            <table style="width:100%;border-collapse:collapse;font-size:14px">
+              <tr><td style="padding:8px 0;color:#6a7a8a;width:80px">日期</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.date}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.time}</td></tr>
+              <tr><td style="padding:8px 0;color:#6a7a8a">人數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.guests} 位</td></tr>
+              ${reservation.note ? `<tr><td style="padding:8px 0;color:#6a7a8a">備註</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.note}</td></tr>` : ''}
+            </table>
+            <div style="text-align:center;margin-top:24px">
+              <a href="${cancelUrl}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:500">取消此訂位</a>
+              <p style="color:#aaa;font-size:12px;margin-top:8px">如需取消，請點擊上方按鈕</p>
+            </div>
+            <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
+            <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
+              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+              📞 0931-223-353（王小姐）
+            </p>
+          </div>
+          <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
+        </div>
+      `
+    }).catch(e => console.error('寄送已收到訂位信失敗:', e.message));
+  }
+
   // 寄給小幫手（純通知，不含確認按鈕）
   sendEmail({
     to: HELPER_EMAIL,
@@ -204,6 +250,8 @@ async function sendReservationEmails(reservation) {
 // ─── 確認訂位通知信（寄給客人）───
 async function sendConfirmedEmail(reservation) {
   if (!reservation.email) return;
+  const cancelToken = genCancelToken(reservation.id);
+  const cancelUrl = `${SITE_URL}/api/reservations/${reservation.id}/cancel?token=${cancelToken}`;
   await sendEmail({
     to: reservation.email,
     subject: `【樂放音樂展演空間】您的訂位已確認 - ${reservation.date} ${reservation.time}`,
@@ -224,6 +272,10 @@ async function sendConfirmedEmail(reservation) {
             <tr><td style="padding:8px 0;color:#6a7a8a">時間</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.time}</td></tr>
             <tr><td style="padding:8px 0;color:#6a7a8a">人數</td><td style="padding:8px 0;color:#1e2d3d;font-weight:500">${reservation.guests} 位</td></tr>
           </table>
+          <div style="text-align:center;margin-top:20px">
+            <a href="${cancelUrl}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:500">取消此訂位</a>
+            <p style="color:#aaa;font-size:12px;margin-top:8px">若有變動，請點擊上方按鈕取消</p>
+          </div>
           <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
           <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
             📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
@@ -1112,6 +1164,76 @@ app.get('/api/reservations/:id/confirm', async (req, res) => {
         ${list[idx].email ? '已自動寄送確認信給客人 (' + list[idx].email + ')' : '客人未提供 Email，不會寄送確認信'}
       </p>
       <p style="margin-top:24px"><a href="/admin#reservations" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
+    </div>
+  `);
+});
+
+// 客人從 Email 點「取消訂位」按鈕
+app.get('/api/reservations/:id/cancel', async (req, res) => {
+  const token = req.query.token;
+  const expectedToken = genCancelToken(req.params.id);
+  if (token !== expectedToken) {
+    return res.status(403).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>連結無效或已過期</h2></div>');
+  }
+  const list = readJSON('reservations.json');
+  const idx = list.findIndex(r => r.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>找不到此訂位</h2></div>');
+  }
+  if (list[idx].status === 'cancelled') {
+    const cancelledTimeStr = list[idx].cancelledAt
+      ? new Date(list[idx].cancelledAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })
+      : '';
+    return res.send(`
+      <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px;background:#f5f5f5;border:2px solid #bbb;border-radius:12px">
+        <div style="display:inline-block;background:#999;color:#fff;padding:10px 30px;border-radius:8px;font-size:18px;font-weight:bold;margin-bottom:20px">已取消</div>
+        <h2 style="color:#666;margin:16px 0">此訂位已取消過</h2>
+        <p style="color:#888;font-size:15px;line-height:1.8">
+          ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)
+        </p>
+        ${cancelledTimeStr ? `<p style="color:#aaa;font-size:13px;margin-top:12px">取消時間：${cancelledTimeStr}</p>` : ''}
+      </div>
+    `);
+  }
+  list[idx].status = 'cancelled';
+  list[idx].cancelledAt = new Date().toISOString();
+  writeJSON('reservations.json', list);
+
+  // 通知老闆娘（和小幫手）客人已取消
+  const cancelTimeStr = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+  const cancelNotifyHtml = `
+    <div style="font-family:sans-serif;max-width:500px;padding:20px">
+      <h2 style="color:#c0392b;border-bottom:2px solid #c0392b;padding-bottom:8px">⚠️ 客人取消訂位</h2>
+      <table style="font-size:14px;line-height:2">
+        <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${list[idx].name}</strong></td></tr>
+        <tr><td style="color:#888">電話</td><td>${list[idx].phone}</td></tr>
+        <tr><td style="color:#888">日期</td><td>${list[idx].date}</td></tr>
+        <tr><td style="color:#888">時間</td><td>${list[idx].time}</td></tr>
+        <tr><td style="color:#888">人數</td><td>${list[idx].guests} 位</td></tr>
+        <tr><td style="color:#888">取消時間</td><td>${cancelTimeStr}</td></tr>
+      </table>
+      <p style="color:#aaa;font-size:12px;margin-top:16px">客人已從 Email 點擊取消按鈕。</p>
+    </div>
+  `;
+  sendEmail({
+    to: OWNER_EMAIL,
+    subject: `【訂位取消通知】${list[idx].name} - ${list[idx].date} ${list[idx].time}`,
+    html: cancelNotifyHtml
+  }).catch(e => console.error('寄送取消通知失敗:', e.message));
+  sendEmail({
+    to: HELPER_EMAIL,
+    subject: `【訂位取消通知】${list[idx].name} - ${list[idx].date} ${list[idx].time}`,
+    html: cancelNotifyHtml
+  }).catch(e => console.error('寄送取消通知（小幫手）失敗:', e.message));
+
+  res.send(`
+    <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px;background:#fff5f5;border:2px solid #c0392b;border-radius:12px">
+      <h1 style="color:#c0392b;font-size:48px;margin:0">✕</h1>
+      <h2 style="color:#1e2d3d">訂位已取消</h2>
+      <p style="color:#888;font-size:15px;line-height:1.8">
+        ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)<br>
+        我們已收到您的取消通知，期待您下次的光臨！
+      </p>
     </div>
   `);
 });
