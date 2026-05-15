@@ -1222,6 +1222,7 @@ async function saveTicket() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? '/api/tickets/'+id : '/api/tickets';
         const resp = await fetch(url, { method, headers: authHeadersNoJSON(), body: fd });
+        if (resp.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
         if (!resp.ok) { const err = await resp.text(); toast('儲存失敗: ' + err, 'error'); return; }
         closeModal('ticketModal');
         toast('已儲存');
