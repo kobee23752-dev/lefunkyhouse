@@ -57,6 +57,10 @@ function genCancelToken(id) {
   return crypto.createHash('sha256').update(id + 'lefunky-cancel-secret').digest('hex').slice(0, 16);
 }
 
+function genOwnerCancelToken(id) {
+  return crypto.createHash('sha256').update(id + 'lefunky-owner-cancel-secret').digest('hex').slice(0, 16);
+}
+
 // ─── Email 寄信系統 ───
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const GMAIL_WEBHOOK_URL = process.env.GMAIL_WEBHOOK_URL || '';
@@ -890,6 +894,8 @@ app.post('/api/ticket-orders', async (req, res) => {
     try {
       const confirmToken = genConfirmToken(order.id);
       const confirmUrl = `${SITE_URL}/api/ticket-orders/${order.id}/confirm?token=${confirmToken}`;
+      const ownerCancelToken = genOwnerCancelToken(order.id);
+      const ownerCancelUrl = `${SITE_URL}/api/ticket-orders/${order.id}/owner-cancel?token=${ownerCancelToken}`;
       const artistText = ticket.artist ? `${ticket.artist} - ` : '';
       await sendEmail({
         to: OWNER_EMAIL,
@@ -911,6 +917,10 @@ app.post('/api/ticket-orders', async (req, res) => {
               <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此購票</a>
             </div>
             <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動寄送購票確認信給 ${order.email}</p>
+            <div style="margin-top:16px;text-align:center">
+              <a href="${ownerCancelUrl}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:10px 28px;border-radius:8px;font-size:13px">❌ 取消此購票</a>
+            </div>
+            <p style="color:#aaa;font-size:11px;text-align:center;margin-top:8px">點擊取消後，系統會自動通知客人</p>
             <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
           </div>
           `
@@ -1014,7 +1024,99 @@ app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
       `
     }).catch(e => console.error('寄送購票確認信失敗:', e.message));
   }
-  res.send('<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2 style="color:#4a8a5a">✅ 購票已確認！</h2><p>已寄送確認信給 ' + orders[idx].email + '</p></body></html>');
+  const ownerCancelToken = genOwnerCancelToken(orders[idx].id);
+  const ownerCancelUrl = `${SITE_URL}/api/ticket-orders/${orders[idx].id}/owner-cancel?token=${ownerCancelToken}`;
+
+  res.send(`
+    <html><body style="font-family:sans-serif;background:#f6f4ef;margin:0;padding:40px">
+      <div style="max-width:500px;margin:40px auto;text-align:center;padding:40px">
+        <h1 style="color:#4a8a5a;font-size:48px;margin:0">✅</h1>
+        <h2 style="color:#1e2d3d">購票已確認成功！</h2>
+        <p style="color:#888;font-size:15px;line-height:1.8">
+          ${orders[idx].name} - ${orders[idx].quantity} 張<br>
+          ${orders[idx].email ? '已自動寄送確認信給客人 (' + orders[idx].email + ')' : '客人未提供 Email，不會寄送確認信'}
+        </p>
+        <p style="margin-top:24px"><a href="/admin" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee">
+          <p style="color:#aaa;font-size:13px;margin-bottom:12px">如果您是不小心按到，可以取消此確認：</p>
+          <a href="${ownerCancelUrl}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:10px 28px;border-radius:8px;font-size:14px" onclick="return confirm('確定要取消此購票確認嗎？系統將自動通知客人。')">❌ 取消此確認</a>
+        </div>
+      </div>
+    </body></html>
+  `);
+});
+
+// 老闆娘誤按購票確認後，點「取消此確認」
+app.get('/api/ticket-orders/:id/owner-cancel', async (req, res) => {
+  const token = req.query.token;
+  const expectedToken = genOwnerCancelToken(req.params.id);
+  if (token !== expectedToken) {
+    return res.status(403).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>連結無效或已過期</h2></div>');
+  }
+  const orders = readJSON('ticket-orders.json');
+  const idx = orders.findIndex(o => o.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>找不到此訂單</h2></div>');
+  }
+  if (orders[idx].status === 'cancelled') {
+    return res.send(`
+      <html><body style="font-family:sans-serif;background:#f6f4ef;margin:0;padding:40px">
+        <div style="max-width:500px;margin:40px auto;text-align:center;padding:40px;background:#f5f5f5;border:2px solid #bbb;border-radius:12px">
+          <h2 style="color:#666">此訂單已取消</h2>
+          <p style="color:#888;font-size:15px">${orders[idx].name} - ${orders[idx].quantity} 張</p>
+        </div>
+      </body></html>
+    `);
+  }
+
+  orders[idx].status = 'cancelled';
+  orders[idx].cancelledAt = new Date().toISOString();
+  orders[idx].cancelledBy = 'owner';
+  writeJSON('ticket-orders.json', orders);
+
+  // 通知客人
+  if (orders[idx].email) {
+    const tickets = readJSON('tickets.json');
+    const ticket = tickets.find(t => t.id === orders[idx].ticketId);
+    const artistText = ticket?.artist ? `${ticket.artist} - ` : '';
+    const showTitle = ticket ? `${artistText}${ticket.title}` : (orders[idx].ticketTitle || '');
+    const showDate = ticket ? `${ticket.date} ${ticket.time}` : '';
+    sendEmail({
+      to: orders[idx].email,
+      subject: `【樂放音樂展演空間】購票取消通知 - ${showTitle}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:500px;padding:20px">
+          <h2 style="color:#c0392b;border-bottom:2px solid #c0392b;padding-bottom:8px">❌ 購票已取消</h2>
+          <p style="color:#555;font-size:15px;line-height:1.8">親愛的 ${orders[idx].name} 您好，</p>
+          <p style="color:#555;font-size:15px;line-height:1.8">
+            很抱歉通知您，由於店家作業失誤，您的購票確認已取消。<br>
+            造成不便，深感抱歉，歡迎您再次與我們聯繫。
+          </p>
+          <table style="font-size:14px;line-height:2;margin:16px 0">
+            <tr><td style="color:#888;padding-right:16px">演出</td><td><strong>${showTitle}</strong></td></tr>
+            ${showDate ? `<tr><td style="color:#888">日期時間</td><td>${showDate}</td></tr>` : ''}
+            <tr><td style="color:#888">票數</td><td>${orders[idx].quantity} 張</td></tr>
+            <tr><td style="color:#888">姓名</td><td>${orders[idx].name}</td></tr>
+          </table>
+          <p style="color:#aaa;font-size:12px;margin-top:24px">如有疑問，請直接與店家聯繫。</p>
+        </div>
+      `
+    }).catch(e => console.error('寄取消通知信錯誤:', e));
+  }
+
+  res.send(`
+    <html><body style="font-family:sans-serif;background:#f6f4ef;margin:0;padding:40px">
+      <div style="max-width:500px;margin:40px auto;text-align:center;padding:40px">
+        <h1 style="color:#c0392b;font-size:48px;margin:0">❌</h1>
+        <h2 style="color:#1e2d3d">已取消此購票確認</h2>
+        <p style="color:#888;font-size:15px;line-height:1.8">
+          ${orders[idx].name} - ${orders[idx].quantity} 張<br>
+          ${orders[idx].email ? '已自動寄送取消通知給客人 (' + orders[idx].email + ')' : '客人未提供 Email，請自行通知'}
+        </p>
+        <p style="margin-top:24px"><a href="/admin" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
+      </div>
+    </body></html>
+  `);
 });
 
 // Admin: delete order
@@ -1155,6 +1257,9 @@ app.get('/api/reservations/:id/confirm', async (req, res) => {
     sendConfirmedEmail(list[idx]).catch(e => console.error('寄確認信錯誤:', e));
   }
 
+  const ownerCancelToken = genOwnerCancelToken(list[idx].id);
+  const ownerCancelUrl = `${SITE_URL}/api/reservations/${list[idx].id}/owner-cancel?token=${ownerCancelToken}`;
+
   res.send(`
     <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px">
       <h1 style="color:#4a8a5a;font-size:48px;margin:0">✅</h1>
@@ -1162,6 +1267,75 @@ app.get('/api/reservations/:id/confirm', async (req, res) => {
       <p style="color:#888;font-size:15px;line-height:1.8">
         ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)<br>
         ${list[idx].email ? '已自動寄送確認信給客人 (' + list[idx].email + ')' : '客人未提供 Email，不會寄送確認信'}
+      </p>
+      <p style="margin-top:24px"><a href="/admin#reservations" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee">
+        <p style="color:#aaa;font-size:13px;margin-bottom:12px">如果您是不小心按到，可以取消此確認：</p>
+        <a href="${ownerCancelUrl}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:10px 28px;border-radius:8px;font-size:14px" onclick="return confirm('確定要取消此訂位確認嗎？系統將自動通知客人。')">❌ 取消此確認</a>
+      </div>
+    </div>
+  `);
+});
+
+// 老闆娘誤按確認後，從頁面點「取消此確認」按鈕
+app.get('/api/reservations/:id/owner-cancel', async (req, res) => {
+  const token = req.query.token;
+  const expectedToken = genOwnerCancelToken(req.params.id);
+  if (token !== expectedToken) {
+    return res.status(403).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>連結無效或已過期</h2></div>');
+  }
+  const list = readJSON('reservations.json');
+  const idx = list.findIndex(r => r.id === req.params.id);
+  if (idx === -1) {
+    return res.status(404).send('<div style="font-family:sans-serif;text-align:center;padding:60px"><h2>找不到此訂位</h2></div>');
+  }
+  if (list[idx].status === 'cancelled') {
+    return res.send(`
+      <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px;background:#f5f5f5;border:2px solid #bbb;border-radius:12px">
+        <h2 style="color:#666">此訂位已取消</h2>
+        <p style="color:#888;font-size:15px">${list[idx].name} - ${list[idx].date} ${list[idx].time}</p>
+      </div>
+    `);
+  }
+
+  list[idx].status = 'cancelled';
+  list[idx].cancelledAt = new Date().toISOString();
+  list[idx].cancelledBy = 'owner';
+  writeJSON('reservations.json', list);
+
+  // 通知客人（如果有 Email）
+  if (list[idx].email) {
+    const cancelTimeStr = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+    sendEmail({
+      to: list[idx].email,
+      subject: `【樂放音樂展演空間】訂位取消通知 - ${list[idx].date} ${list[idx].time}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:500px;padding:20px">
+          <h2 style="color:#c0392b;border-bottom:2px solid #c0392b;padding-bottom:8px">❌ 訂位已取消</h2>
+          <p style="color:#555;font-size:15px;line-height:1.8">親愛的 ${list[idx].name} 您好，</p>
+          <p style="color:#555;font-size:15px;line-height:1.8">
+            很抱歉通知您，由於店家作業失誤，您原先的訂位已取消。<br>
+            造成不便，深感抱歉，歡迎您再次與我們聯繫重新訂位。
+          </p>
+          <table style="font-size:14px;line-height:2;margin:16px 0">
+            <tr><td style="color:#888;padding-right:16px">姓名</td><td><strong>${list[idx].name}</strong></td></tr>
+            <tr><td style="color:#888">日期</td><td>${list[idx].date}</td></tr>
+            <tr><td style="color:#888">時間</td><td>${list[idx].time}</td></tr>
+            <tr><td style="color:#888">人數</td><td>${list[idx].guests} 位</td></tr>
+          </table>
+          <p style="color:#aaa;font-size:12px;margin-top:24px">如有疑問，請直接與店家聯繫。</p>
+        </div>
+      `
+    }).catch(e => console.error('寄取消通知信錯誤:', e));
+  }
+
+  res.send(`
+    <div style="font-family:sans-serif;max-width:500px;margin:60px auto;text-align:center;padding:40px">
+      <h1 style="color:#c0392b;font-size:48px;margin:0">❌</h1>
+      <h2 style="color:#1e2d3d">已取消此訂位確認</h2>
+      <p style="color:#888;font-size:15px;line-height:1.8">
+        ${list[idx].name} - ${list[idx].date} ${list[idx].time} (${list[idx].guests}位)<br>
+        ${list[idx].email ? '已自動寄送取消通知給客人 (' + list[idx].email + ')' : '客人未提供 Email，請自行通知'}
       </p>
       <p style="margin-top:24px"><a href="/admin#reservations" style="color:#c4a55a;text-decoration:none">前往後台管理 →</a></p>
     </div>
