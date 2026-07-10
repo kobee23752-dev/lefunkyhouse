@@ -220,8 +220,8 @@ async function sendReservationEmails(reservation) {
             </div>
             <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
             <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
-              📞 0931-223-353（王小姐）
+              地址 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+              電話 0931-223-353（王小姐）
             </p>
           </div>
           <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
@@ -282,8 +282,8 @@ async function sendConfirmedEmail(reservation) {
           </div>
           <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
           <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-            📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
-            📞 0931-223-353（王小姐）<br>
+            地址 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+            電話 0931-223-353（王小姐）<br>
             ⚠️ 逾時 15 分鐘未到將自動取消訂位
           </p>
         </div>
@@ -1015,8 +1015,8 @@ app.get('/api/ticket-orders/:id/confirm', async (req, res) => {
             </table>
             <hr style="border:none;border-top:1px solid #e4dfd4;margin:20px 0">
             <p style="color:#6a7a8a;font-size:13px;line-height:1.6;margin:0">
-              📍 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
-              📞 0931-223-353（王小姐）
+              地址 新北市淡水區中正路22巷1-1號（老街台電正對面）<br>
+              電話 0931-223-353（王小姐）
             </p>
           </div>
           <p style="text-align:center;color:#a0a8b0;font-size:12px;margin-top:16px">此為系統自動發送，請勿直接回覆此信件</p>
