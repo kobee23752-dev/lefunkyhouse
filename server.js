@@ -182,6 +182,10 @@ async function sendReservationEmails(reservation) {
           <a href="${confirmUrl}" style="display:inline-block;background:#4a8a5a;color:#fff;text-decoration:none;padding:14px 40px;border-radius:8px;font-size:16px;font-weight:bold">✅ 確認此訂位</a>
         </div>
         <p style="color:#aaa;font-size:12px;margin-top:16px;text-align:center">點擊上方按鈕後，系統會自動更新訂位狀態${reservation.email ? '，並寄送確認信給客人' : ''}</p>
+        <div style="margin-top:16px;text-align:center">
+          <a href="${SITE_URL}/api/reservations/${reservation.id}/owner-cancel?token=${genOwnerCancelToken(reservation.id)}" style="display:inline-block;background:#c0392b;color:#fff;text-decoration:none;padding:10px 28px;border-radius:8px;font-size:13px">❌ 取消此訂位</a>
+        </div>
+        <p style="color:#aaa;font-size:11px;text-align:center;margin-top:8px">點擊取消後，系統會自動通知客人</p>
         <p style="color:#aaa;font-size:11px">送出時間：${new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</p>
       </div>
     `
