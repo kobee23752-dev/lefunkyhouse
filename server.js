@@ -439,29 +439,51 @@ app.put('/api/settings/password', authMiddleware, (req, res) => {
 //  NEWS
 // ═══════════════════════════════════════
 app.get('/api/news', (req, res) => {
-  // 手動公告
-  const manualNews = readJSON('news.json').map(n => ({
-    ...n,
-    _sortKey: n.createdAt || n.date || '2000-01-01'
-  }));
-
-  // 自動：最近新增的售票（最多近 30 天）
-  const tickets = readJSON('tickets.json');
   const now = Date.now();
   const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  // 以台灣時間為準（伺服器在 UTC）
+  const twDate = ms => new Date(ms + 8 * 60 * 60 * 1000).toISOString().slice(0, 10); // YYYY-MM-DD
+  const todayTW = twDate(now);
+  // 各種日期寫法統一成 YYYY-MM-DD，排序才不會錯（2026/04/01 vs 2026-09-30）
+  const normDate = s => {
+    const m = String(s || '').match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : '';
+  };
+  const toSortKey = v => {
+    if (!v) return '2000-01-01';
+    const t = new Date(v).getTime();
+    return /T/.test(String(v)) && !isNaN(t) ? new Date(t + 8 * 60 * 60 * 1000).toISOString() : normDate(v) || '2000-01-01';
+  };
+
+  const tickets = readJSON('tickets.json');
+  const ticketMap = Object.fromEntries(tickets.map(t => [t.id, t]));
+  const eventPassed = t => { const d = normDate(t && t.date); return d && d < todayTW; };
+
+  // 手動公告：連結的演出已結束、售票已刪除，或沒連售票且發布超過 30 天，就不顯示
+  const manualNews = readJSON('news.json')
+    .filter(n => {
+      if (n.ticketId) {
+        const t = ticketMap[n.ticketId];
+        return t && !eventPassed(t);
+      }
+      const d = normDate(n.createdAt || n.date);
+      return !d || d >= twDate(now - THIRTY_DAYS);
+    })
+    .map(n => ({ ...n, _sortKey: toSortKey(n.createdAt || n.date) }));
+
+  // 自動：最近新增的售票（最多近 30 天，演出結束就隱藏）
   const ticketNews = tickets
-    .filter(t => t.createdAt && (now - new Date(t.createdAt).getTime()) < THIRTY_DAYS)
+    .filter(t => t.createdAt && (now - new Date(t.createdAt).getTime()) < THIRTY_DAYS && !eventPassed(t))
+    .filter(t => !manualNews.some(n => n.ticketId === t.id)) // 已有手動公告就不重複
     .map(t => {
-      const d = new Date(t.createdAt);
-      const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
       const artistText = t.artist ? `${t.artist} - ` : '';
       return {
         id: 'auto-ticket-' + t.id,
-        date: dateStr,
+        date: twDate(new Date(t.createdAt).getTime()).replace(/-/g, '/'),
         tag: '售票',
         text: `${artistText}${t.title}（${t.date}）開放購票`,
         ticketId: t.id,
-        _sortKey: t.createdAt
+        _sortKey: toSortKey(t.createdAt)
       };
     });
 
@@ -478,15 +500,13 @@ app.get('/api/news', (req, res) => {
         if (!latest || mtime > latest.mtime) latest = { file: f, mtime };
       });
       if (latest && (now - latest.mtime.getTime()) < THIRTY_DAYS) {
-        const d = latest.mtime;
-        const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
         scheduleNews.push({
           id: 'auto-schedule-' + latest.file,
-          date: dateStr,
+          date: twDate(latest.mtime.getTime()).replace(/-/g, '/'),
           tag: '節目表',
           text: '本月節目表已更新',
           link: 'live',
-          _sortKey: latest.mtime.toISOString()
+          _sortKey: toSortKey(latest.mtime.toISOString())
         });
       }
     }
