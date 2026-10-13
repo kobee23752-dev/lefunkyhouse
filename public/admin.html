@@ -549,18 +549,35 @@ function logout() {
 function authHeaders() { return { 'Authorization':'Bearer '+TOKEN, 'Content-Type':'application/json' }; }
 function authHeadersNoJSON() { return { 'Authorization':'Bearer '+TOKEN }; }
 
+// 全局 fetch wrapper：任何 401 都立刻跳回登入
+let _sessionExpired = false;
+async function apiFetch(url, options = {}) {
+    const r = await fetch(url, options);
+    if (r.status === 401 && !_sessionExpired) {
+        _sessionExpired = true;
+        TOKEN = '';
+        localStorage.removeItem('lefunky_admin_token');
+        // 隱藏後台、顯示登入頁
+        document.getElementById('app').classList.remove('show');
+        document.getElementById('loginPage').style.display = '';
+        document.getElementById('loginError').style.display = 'none';
+        // 顯示明顯提示
+        const msg = document.createElement('p');
+        msg.id = 'sessionExpiredMsg';
+        msg.style.cssText = 'color:#c0392b;font-size:14px;margin-top:8px;text-align:center';
+        msg.textContent = '登入已過期，請重新登入';
+        const form = document.getElementById('loginPage');
+        if (!document.getElementById('sessionExpiredMsg')) form.appendChild(msg);
+    }
+    return r;
+}
+
 // 檢查 token 是否有效，無效則跳回登入
 async function checkAuth() {
     if (!TOKEN) return false;
     try {
-        const r = await fetch('/api/smtp-settings', { headers: authHeaders() });
-        if (r.status === 401) {
-            toast('登入已過期，請重新登入', 'error');
-            TOKEN = '';
-            localStorage.removeItem('lefunky_admin_token');
-            setTimeout(() => location.reload(), 1500);
-            return false;
-        }
+        const r = await apiFetch('/api/smtp-settings', { headers: authHeaders() });
+        if (r.status === 401) return false;
         return true;
     } catch { return true; }
 }
@@ -570,7 +587,7 @@ async function checkAuth() {
 (async function() {
     if (TOKEN) {
         try {
-            const r = await fetch('/api/reservations', { headers: authHeaders() });
+            const r = await apiFetch('/api/reservations', { headers: authHeaders() });
             if (r.ok) { showApp(); return; }
         } catch {}
     }
@@ -616,7 +633,7 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 // ─── Dashboard ───
 async function loadDashboard() {
     try {
-        const res = await (await fetch('/api/reservations', { headers: authHeaders() })).json();
+        const res = await (await apiFetch('/api/reservations', { headers: authHeaders() })).json();
         const today = new Date().toISOString().split('T')[0];
         const todayRes = res.filter(r => r.date === today);
         const pending = res.filter(r => r.status === 'pending');
@@ -645,7 +662,7 @@ function esc(s) { const d=document.createElement('div'); d.textContent=s||''; re
 // ─── Schedule ───
 let scheduleImages = [];
 async function loadScheduleAdmin() {
-    const data = await (await fetch('/api/schedule', { headers: authHeadersNoJSON() })).json();
+    const data = await (await apiFetch('/api/schedule', { headers: authHeadersNoJSON() })).json();
     scheduleImages = data.images || [];
     const c = document.getElementById('scheduleList');
     if (!scheduleImages.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳節目表</p>'; return; }
@@ -672,7 +689,7 @@ async function moveSchedule(idx, dir) {
     if (newIdx < 0 || newIdx >= scheduleImages.length) return;
     const filenames = scheduleImages.map(x => x.filename);
     [filenames[idx], filenames[newIdx]] = [filenames[newIdx], filenames[idx]];
-    const r = await fetch('/api/schedule/reorder', { method:'PUT', headers: authHeaders(), body: JSON.stringify({ filenames }) });
+    const r = await apiFetch('/api/schedule/reorder', { method:'PUT', headers: authHeaders(), body: JSON.stringify({ filenames }) });
     if (r.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
     if (r.ok) { toast('排序已更新'); loadScheduleAdmin(); }
 }
@@ -682,7 +699,7 @@ async function uploadSchedule(file) {
     const fd = new FormData();
     fd.append('image', file);
     try {
-        const r = await fetch('/api/schedule', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+        const r = await apiFetch('/api/schedule', { method:'POST', headers: authHeadersNoJSON(), body: fd });
         if (r.status === 401) { toast('登入已過期，請重新登入','error'); TOKEN=''; localStorage.removeItem('lefunky_admin_token'); setTimeout(()=>location.reload(),1500); return; }
         if (r.ok) { toast('上傳成功'); loadScheduleAdmin(); }
         else toast('上傳失敗','error');
@@ -691,13 +708,13 @@ async function uploadSchedule(file) {
 
 async function deleteSchedule(fn) {
     if (!confirm('確定刪除此節目表？')) return;
-    await fetch('/api/schedule/'+fn, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/schedule/'+fn, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadScheduleAdmin();
 }
 
 // ─── News ───
 async function loadNewsAdmin() {
-    const news = await (await fetch('/api/news')).json();
+    const news = await (await apiFetch('/api/news')).json();
     document.getElementById('newsList').innerHTML = news.length ? news.map(n => `
         <tr>
             <td>${esc(n.date)}</td><td><span class="badge badge-pending">${esc(n.tag)}</span></td>
@@ -738,14 +755,14 @@ async function saveNews() {
 
 async function deleteNews(id) {
     if (!confirm('確定刪除？')) return;
-    await fetch('/api/news/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/news/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadNewsAdmin();
 }
 
 // ─── Artists ───
 async function loadArtistsAdmin() {
     let artists = [];
-    try { artists = await (await fetch('/api/artists')).json(); } catch(e) { console.error('loadArtists error', e); }
+    try { artists = await (await apiFetch('/api/artists')).json(); } catch(e) { console.error('loadArtists error', e); }
     allArtists = artists;
     const resident = artists.filter(a => (a.category || 'resident') !== 'special');
     const special = artists.filter(a => a.category === 'special');
@@ -787,7 +804,7 @@ async function moveArtist(id, direction) {
     const reordered = cat === 'special' ? resident : sameCategory;
     const reorderedOther = cat === 'special' ? sameCategory : special;
     const allIds = [...reordered.map(a => a.id), ...reorderedOther.map(a => a.id)];
-    await fetch('/api/artists/reorder', { method:'POST', headers: authHeaders(), body: JSON.stringify({ ids: allIds }) });
+    await apiFetch('/api/artists/reorder', { method:'POST', headers: authHeaders(), body: JSON.stringify({ ids: allIds }) });
     loadArtistsAdmin();
 }
 
@@ -824,7 +841,7 @@ function openArtistModal(item) {
 }
 
 async function editArtist(id) {
-    const artists = await (await fetch('/api/artists')).json();
+    const artists = await (await apiFetch('/api/artists')).json();
     const a = artists.find(x => x.id === id);
     if (a) openArtistModal(a);
 }
@@ -879,13 +896,13 @@ async function saveArtist() {
 
 async function deleteArtist(id) {
     if (!confirm('確定刪除此歌手？')) return;
-    await fetch('/api/artists/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/artists/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadArtistsAdmin();
 }
 
 // ─── Gallery ───
 async function loadGalleryAdmin() {
-    const gallery = await (await fetch('/api/gallery')).json();
+    const gallery = await (await apiFetch('/api/gallery')).json();
     const c = document.getElementById('galleryList');
     if (!gallery.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳照片</p>'; return; }
     c.innerHTML = gallery.map(g => `
@@ -905,19 +922,19 @@ async function uploadGalleryPhoto(file) {
     const fd = new FormData();
     fd.append('photo', file);
     fd.append('caption', caption);
-    await fetch('/api/gallery', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+    await apiFetch('/api/gallery', { method:'POST', headers: authHeadersNoJSON(), body: fd });
     toast('上傳成功'); loadGalleryAdmin();
 }
 
 async function deleteGallery(id) {
     if (!confirm('確定刪除？')) return;
-    await fetch('/api/gallery/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/gallery/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadGalleryAdmin();
 }
 
 // ─── Menu Images ───
 async function loadMenuAdmin() {
-    menuImages = await (await fetch('/api/menu-images')).json();
+    menuImages = await (await apiFetch('/api/menu-images')).json();
     const c = document.getElementById('menuImagesList');
     if (!menuImages.length) { c.innerHTML = '<p style="color:var(--gray-500)">尚未上傳菜單照片</p>'; return; }
     c.innerHTML = menuImages.map(img => `
@@ -937,19 +954,19 @@ async function uploadMenuPhoto(file) {
     const fd = new FormData();
     fd.append('photo', file);
     fd.append('caption', caption);
-    await fetch('/api/menu-images', { method:'POST', headers: authHeadersNoJSON(), body: fd });
+    await apiFetch('/api/menu-images', { method:'POST', headers: authHeadersNoJSON(), body: fd });
     toast('上傳成功'); loadMenuAdmin();
 }
 
 async function deleteMenuImage(id) {
     if (!confirm('確定刪除此菜單照片？')) return;
-    await fetch('/api/menu-images/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/menu-images/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadMenuAdmin();
 }
 
 // ─── Reservations ───
 async function loadResAdmin() {
-    const res = await (await fetch('/api/reservations', { headers: authHeaders() })).json();
+    const res = await (await apiFetch('/api/reservations', { headers: authHeaders() })).json();
     document.getElementById('resList').innerHTML = res.length ? res.map(r => `
         <tr>
             <td style="font-size:.78rem;color:var(--gray-600);white-space:nowrap">${r.createdAt ? new Date(r.createdAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '-'}</td>
@@ -970,7 +987,7 @@ let _editingBlockedId = null;
 
 async function loadBlockedDates() {
     try {
-        const list = await (await fetch('/api/blocked-dates', { headers: authHeaders() })).json();
+        const list = await (await apiFetch('/api/blocked-dates', { headers: authHeaders() })).json();
         const tbody = document.getElementById('blockedDatesList');
         if (!list.length) {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray-500)">尚未設定不可預約日期</td></tr>';
@@ -1085,7 +1102,7 @@ async function saveBlockedDate() {
 
 async function deleteBlockedDate(id) {
     if (!confirm('確定要刪除？')) return;
-    await fetch(`/api/blocked-dates/${id}`, { method: 'DELETE', headers: authHeaders() });
+    await apiFetch(`/api/blocked-dates/${id}`, { method: 'DELETE', headers: authHeaders() });
     toast('已刪除');
     loadBlockedDates();
 }
@@ -1093,7 +1110,7 @@ async function deleteBlockedDate(id) {
 // ─── SMTP Settings ───
 async function loadSmtpSettings() {
     try {
-        const r = await fetch('/api/smtp-settings', { headers: authHeaders() });
+        const r = await apiFetch('/api/smtp-settings', { headers: authHeaders() });
         if (r.ok) {
             const s = await r.json();
             document.getElementById('smtpHost').value = s.host || '';
@@ -1115,7 +1132,7 @@ async function saveSmtpSettings() {
     };
     if (!data.host || !data.user || !data.pass) { toast('請填寫完整的 SMTP 設定', 'error'); return; }
     try {
-        const r = await fetch('/api/smtp-settings', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+        const r = await apiFetch('/api/smtp-settings', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
         if (r.ok) { toast('SMTP 設定已儲存'); }
         else { toast('儲存失敗', 'error'); }
     } catch(e) { toast('儲存失敗: ' + e.message, 'error'); }
@@ -1123,7 +1140,7 @@ async function saveSmtpSettings() {
 
 async function testSmtp() {
     try {
-        const r = await fetch('/api/smtp-test', { method: 'POST', headers: authHeaders() });
+        const r = await apiFetch('/api/smtp-test', { method: 'POST', headers: authHeaders() });
         const d = await r.json();
         if (r.ok) { toast(d.message); }
         else { toast(d.error, 'error'); }
@@ -1131,20 +1148,20 @@ async function testSmtp() {
 }
 
 async function updateRes(id, status) {
-    await fetch('/api/reservations/'+id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({status}) });
+    await apiFetch('/api/reservations/'+id, { method:'PATCH', headers: authHeaders(), body: JSON.stringify({status}) });
     toast('已更新'); loadResAdmin();
 }
 
 async function deleteRes(id) {
     if (!confirm('確定刪除？')) return;
-    await fetch('/api/reservations/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/reservations/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadResAdmin();
 }
 
 // ─── Tickets ───
 async function loadTicketsAdmin() {
     try {
-        const resp = await fetch('/api/tickets', { headers: authHeaders() });
+        const resp = await apiFetch('/api/tickets', { headers: authHeaders() });
         const tickets = await resp.json();
         const c = document.getElementById('ticketsList');
         if (!tickets.length) { c.innerHTML = '<div class="card"><p style="color:var(--gray-500)">尚未新增售票演出</p></div>'; return; }
@@ -1194,7 +1211,7 @@ function openTicketModal(item) {
 }
 
 async function editTicket(id) {
-    const tickets = await (await fetch('/api/tickets', { headers: authHeaders() })).json();
+    const tickets = await (await apiFetch('/api/tickets', { headers: authHeaders() })).json();
     const t = tickets.find(x => x.id === id);
     if (t) openTicketModal(t);
 }
@@ -1232,7 +1249,7 @@ async function saveTicket() {
 
 async function deleteTicket(id) {
     if (!confirm('確定刪除此售票演出？')) return;
-    await fetch('/api/tickets/'+id, { method:'DELETE', headers: authHeaders() });
+    await apiFetch('/api/tickets/'+id, { method:'DELETE', headers: authHeaders() });
     toast('已刪除'); loadTicketsAdmin();
 }
 
@@ -1243,7 +1260,7 @@ async function viewTicketOrders(ticketId, title) {
     const c = document.getElementById('ticketOrdersList');
     c.innerHTML = '<p style="color:var(--gray-500)">載入中...</p>';
     try {
-        const orders = await (await fetch('/api/ticket-orders/' + ticketId, { headers: authHeaders() })).json();
+        const orders = await (await apiFetch('/api/ticket-orders/' + ticketId, { headers: authHeaders() })).json();
         if (!orders.length) {
             c.innerHTML = '<p style="color:var(--gray-500)">尚無訂單</p>';
             return;
@@ -1293,21 +1310,21 @@ async function viewTicketOrders(ticketId, title) {
 }
 
 async function confirmOrder(orderId, ticketId, title) {
-    await fetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'confirmed', hasPaid: true }) });
+    await apiFetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'confirmed', hasPaid: true }) });
     toast('已確認');
     viewTicketOrders(ticketId, title);
     loadTicketsAdmin();
 }
 
 async function markOrderPaid(orderId, ticketId, title) {
-    await fetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ hasPaid: true }) });
+    await apiFetch('/api/ticket-orders/' + orderId, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ hasPaid: true }) });
     toast('已標記為已匯款');
     viewTicketOrders(ticketId, title);
 }
 
 async function deleteOrder(orderId, ticketId, title) {
     if (!confirm('確定刪除此訂單？')) return;
-    await fetch('/api/ticket-orders/' + orderId, { method: 'DELETE', headers: authHeaders() });
+    await apiFetch('/api/ticket-orders/' + orderId, { method: 'DELETE', headers: authHeaders() });
     toast('已刪除');
     viewTicketOrders(ticketId, title);
     loadTicketsAdmin();
@@ -1316,7 +1333,7 @@ async function deleteOrder(orderId, ticketId, title) {
 // ─── Settings ───
 async function changePassword(e) {
     e.preventDefault();
-    const r = await fetch('/api/settings/password', {
+    const r = await apiFetch('/api/settings/password', {
         method:'PUT', headers: authHeaders(),
         body: JSON.stringify({ oldPassword: document.getElementById('oldPwd').value, newPassword: document.getElementById('newPwd').value })
     });
