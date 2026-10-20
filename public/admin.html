@@ -521,9 +521,21 @@ async function handleLogin(e) {
     return false;
 }
 
+let _keepAliveTimer = null;
+function startKeepAlive() {
+    if (_keepAliveTimer) return;
+    // 每 10 分鐘 ping 一次，讓 session 保持活著
+    _keepAliveTimer = setInterval(async () => {
+        if (!TOKEN) return;
+        try { await fetch('/api/reservations', { headers: authHeaders() }); } catch {}
+    }, 10 * 60 * 1000);
+}
+
 function showApp() {
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('app').classList.add('show');
+    _sessionExpired = false;
+    startKeepAlive();
     loadDashboard();
     // 綁定海報上傳按鈕
     document.getElementById('ticketPosterBtn').addEventListener('click', function(e) {
