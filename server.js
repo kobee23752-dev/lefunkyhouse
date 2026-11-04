@@ -315,7 +315,9 @@ app.post('/api/bulk-upload', authMiddleware, (req, res) => {
 });
 
 // ─── Auth (persistent sessions) ───
-const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+// 存到 Railway volume（/app/data/）才不會因重新部署而清空
+const PERSISTENT_DATA_DIR = fs.existsSync('/app/data') ? '/app/data' : DATA_DIR;
+const SESSIONS_FILE = path.join(PERSISTENT_DATA_DIR, 'sessions.json');
 
 function loadSessions() {
   try {
